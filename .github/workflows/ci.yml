@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Checks every push to main and every pull request.
+#   validate: shell scripts, Dockerfile and Compose file
+#   build:    builds the image, starts all services and checks /up
+#             (only after the Laravel skeleton exists - see docs/development.md)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check shell scripts
+        run: shellcheck docker/entrypoint.sh scripts/bootstrap-laravel.sh
+
+      - name: Check Dockerfile
+        run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
+
+      - name: Check Compose file
+        run: |
+          cp .env.example .env
+          sed -i -e 's/^APP_KEY=$/APP_KEY=base64:ci/' -e 's/^DB_PASSWORD=$/DB_PASSWORD=ci/' .env
+          docker compose config -q
+          docker compose --profile redis --profile ai config -q
+
+  build:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for the Laravel skeleton
+        id: skeleton
+        run: |
+          if [ -f artisan ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Laravel skeleton yet. Run the 'Bootstrap Laravel skeleton' workflow first. Build skipped."
+          fi
+
+      - name: Make a test .env
+        if: steps.skeleton.outputs.present == 'true'
+        run: |
+          cp .env.example .env
+          key="base64:$(openssl rand -base64 32)"
+          sed -i "s|^APP_KEY=$|APP_KEY=${key}|" .env
+          sed -i -e 's/^DB_PASSWORD=$/DB_PASSWORD=ci-password/' \
+                 -e 's/^REVERB_APP_ID=$/REVERB_APP_ID=100001/' \
+                 -e 's/^REVERB_APP_KEY=$/REVERB_APP_KEY=ci-key/' \
+                 -e 's/^REVERB_APP_SECRET=$/REVERB_APP_SECRET=ci-secret/' .env
+
+      - name: Build and start all services
+        if: steps.skeleton.outputs.present == 'true'
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Check the health endpoint
+        if: steps.skeleton.outputs.present == 'true'
+        run: |
+          curl -fsS http://127.0.0.1:8080/up
+          docker compose ps
+
+      - name: Show logs after a failure
+        if: failure() && steps.skeleton.outputs.present == 'true'
+        run: docker compose logs --no-color
+
+      - name: Stop and remove test data
+        if: always() && steps.skeleton.outputs.present == 'true'
+        run: docker compose down -v
