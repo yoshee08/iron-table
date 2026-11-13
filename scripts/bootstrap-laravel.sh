@@ -81,13 +81,16 @@ say "3/6 Publishing broadcasting and Reverb configuration"
 # install:broadcasting writes the Reverb settings into .env, so it needs one.
 # This temporary .env is deleted in step 5 and is never committed.
 cp "$app/.env.example" "$app/.env"
-# This command can also try to run npm, which is not in the composer image.
-# The result is checked below, so a failure here is only a warning.
-if ! php_in "$app" artisan install:broadcasting --reverb --no-interaction; then
-    warn "install:broadcasting returned an error. The required files are checked next."
-fi
-for f in config/broadcasting.php config/reverb.php routes/channels.php; do
-    [ -f "$app/$f" ] || fail "Missing $f after install:broadcasting. Stop and check the Laravel $LARAVEL_CONSTRAINT broadcasting documentation."
+# Two commands, checked against the Laravel 13.x and Reverb 1.x source:
+#  a) install:broadcasting publishes config/broadcasting.php, routes/channels.php
+#     and resources/js/echo.js. It skips its own Reverb step because Reverb is
+#     already installed (step 2). --without-node skips npm, which needs a TTY.
+#  b) reverb:install publishes config/reverb.php and the REVERB_* settings. It
+#     does not call install:broadcasting again, because routes/channels.php exists.
+php_in "$app" artisan install:broadcasting --reverb --without-node --no-interaction
+php_in "$app" artisan reverb:install --no-interaction
+for f in config/broadcasting.php config/reverb.php routes/channels.php resources/js/echo.js; do
+    [ -f "$app/$f" ] || fail "Missing $f after the broadcasting install. Check the Laravel $LARAVEL_CONSTRAINT broadcasting documentation."
 done
 
 # --- 4. Front-end packages ---------------------------------------------------
