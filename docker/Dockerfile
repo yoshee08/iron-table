@@ -87,5 +87,10 @@ USER app
 # reverse proxy, or by FrankenPHP with a Caddyfile (planned, see docs).
 EXPOSE 8080
 
+# The base image checks the Caddy admin port (2019). Only the "app" role runs
+# Caddy, so that check fails for "reverb" and "worker". Each role sets its own
+# health check in compose.yaml.
+HEALTHCHECK NONE
+
 ENTRYPOINT ["iron-table-entrypoint"]
 CMD ["app"]

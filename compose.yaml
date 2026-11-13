@@ -58,6 +58,8 @@ services:
   worker:
     <<: *app-image
     command: ["worker"]
+    # No health check: the queue worker has no port. "restart" starts it again
+    # if it stops. The image has HEALTHCHECK NONE (see docker/Dockerfile).
     depends_on:
       app:
         condition: service_healthy
