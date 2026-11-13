@@ -8,14 +8,13 @@
 # Needs:  a bootstrapped Laravel application in the repository root
 #         (run scripts/bootstrap-laravel.sh one time first).
 
-ARG FRANKENPHP_IMAGE=dunglas/frankenphp:1.13.4-php8.4-bookworm
-ARG COMPOSER_IMAGE=composer:2.8.12
-ARG NODE_IMAGE=node:22.22-alpine
+# Image versions are pinned in the FROM lines. Change them together with
+# scripts/bootstrap-laravel.sh (COMPOSER_IMAGE, NODE_IMAGE).
 
 # ---------------------------------------------------------------------------
 # Stage 1: PHP dependencies (no dev packages)
 # ---------------------------------------------------------------------------
-FROM ${COMPOSER_IMAGE} AS vendor
+FROM composer:2.8.12 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 # The composer image does not have the runtime PHP extensions (pdo_pgsql,
@@ -37,7 +36,7 @@ RUN composer dump-autoload \
 # ---------------------------------------------------------------------------
 # Stage 2: front-end assets (Vite build)
 # ---------------------------------------------------------------------------
-FROM ${NODE_IMAGE} AS assets
+FROM node:22.22-alpine AS assets
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -49,7 +48,7 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 # Stage 3: runtime
 # ---------------------------------------------------------------------------
-FROM ${FRANKENPHP_IMAGE} AS runtime
+FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS runtime
 
 ARG APP_UID=10001
 ARG APP_GID=10001
