@@ -8,7 +8,16 @@ IRon Table is an open-source, self-hosted application for incident response (IR)
 
 ## Status
 
-Design phase. The approved design specification is in [`docs/design-specification.html`](docs/design-specification.html).
+Build setup phase. The Docker build files are ready. The Laravel skeleton is not generated yet.
+
+| Document | Contents |
+| --- | --- |
+| [`docs/design-specification.html`](docs/design-specification.html) | Approved design specification |
+| [`docs/development.md`](docs/development.md) | How to bootstrap, build and start the application |
+
+## Technology
+
+PHP 8.4, Laravel 13, Livewire 4, Laravel Reverb, PostgreSQL 16 with pgvector, FrankenPHP, Docker Compose.
 
 ## License
 
