@@ -94,4 +94,4 @@ The script makes Laravel 13 with Livewire 4 and Laravel Reverb. It never replace
 | --- | --- | --- |
 | K2 | TLS is not in the image yet. | Use a reverse proxy in front of port 8080 now. Add automatic TLS to `docker/Caddyfile` later. |
 | K3 | The root file system is not read-only yet (spec SEC-10). | Make it read-only after the first full test, with tmpfs for temporary files. |
-| K5 | CI builds and starts the stack on GitHub runners only (amd64). Nobody has run it on a server or on arm64 yet. | Do the first server start with section 4. Add an arm64 build to CI. |
+| K5 | CI starts the full stack on amd64 only. The arm64 image is built and checked (PHP and extensions) under emulation, but the stack is not started on arm64. Nobody has run it on a real server yet. | Do the first server start with section 4. |
