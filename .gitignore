@@ -32,3 +32,6 @@
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Backups contain real data and secrets
+/backups/

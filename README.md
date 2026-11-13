@@ -19,6 +19,8 @@ Open **http://localhost:8080**
 
 The first start takes a few minutes. Later starts take seconds.
 
+`setup.sh` shows the first administrator email and password. Save them.
+
 ## Stop
 
 ```sh
@@ -35,6 +37,8 @@ Your data is kept.
 | See if it is running | `docker compose ps` |
 | See the logs | `docker compose logs -f` |
 | Update to the latest version | `git pull && docker compose up -d --build` |
+| Back up all data | `./scripts/backup.sh` |
+| Restore a backup | `./scripts/restore.sh backups/<file>.tar` |
 | Delete everything, including all data | `docker compose down -v` |
 
 ## More
