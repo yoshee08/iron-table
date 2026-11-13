@@ -25,13 +25,19 @@ These rules apply to every AI assistant that works in this repository. They repl
 - Never commit `.env`, keys, database dumps, `vendor/` or `node_modules/`.
 - Never commit real organization evidence (for example IR plans, screenshots, contact lists). Sample data must be fictional (spec SEC-14).
 
-## 4. Source of truth
+## 4. Branches and merges
+
+- Do not push to `main`. Make a branch and open a pull request.
+- Merge only when all CI jobs pass. GitHub cannot enforce this on a free private repository, so obey this rule.
+
+## 5. Source of truth
 
 - The design specification (`docs/design-specification.html`) controls the design.
 - The development guide (`docs/development.md`) controls the build and start procedures.
 - If code and specification do not agree, tell the user. Do not change the specification without approval.
+- The specification is edited in Claude Docs. After each change, export it to `docs/design-specification.html` in the same pull request.
 
-## 5. Code and documents
+## 6. Code and documents
 
 - Our own source files start with `SPDX-License-Identifier: AGPL-3.0-or-later`. Scenario and mapping files use `CC-BY-4.0`.
 - Write documentation in ASD-STE100 Simplified Technical English: short sentences, active voice, one instruction per sentence.

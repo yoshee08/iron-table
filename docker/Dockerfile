@@ -4,21 +4,21 @@
 # IRon Table - one image, three roles (app, reverb, worker).
 # The role is the first argument to the entrypoint (see docker/entrypoint.sh).
 #
-# Build:  docker compose build
-# Needs:  a bootstrapped Laravel application in the repository root
-#         (run scripts/bootstrap-laravel.sh one time first).
-
+# Targets:
+#   runtime  the production image (default, last stage)   docker compose build
+#   test     runtime base + dev packages, for CI tests      docker build --target test
+#
 # Image versions are pinned in the FROM lines. Change them together with
 # scripts/bootstrap-laravel.sh (COMPOSER_IMAGE, NODE_IMAGE).
 
 # ---------------------------------------------------------------------------
-# Stage 1: PHP dependencies (no dev packages)
+# PHP dependencies, production (no dev packages)
 # ---------------------------------------------------------------------------
 FROM composer:2.8.12 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 # The composer image does not have the runtime PHP extensions (pdo_pgsql,
-# pcntl, ...). The runtime stage has them, so platform checks are skipped here.
+# pcntl, ...). The base stage has them, so platform checks are skipped here.
 RUN composer install \
         --no-dev \
         --no-scripts \
@@ -34,7 +34,22 @@ RUN composer dump-autoload \
         --classmap-authoritative
 
 # ---------------------------------------------------------------------------
-# Stage 2: front-end assets (Vite build)
+# PHP dependencies, with dev packages (test target only)
+# ---------------------------------------------------------------------------
+FROM composer:2.8.12 AS vendor-dev
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install \
+        --no-scripts \
+        --no-autoloader \
+        --no-interaction \
+        --prefer-dist \
+        --ignore-platform-reqs
+COPY . .
+RUN composer dump-autoload --no-scripts --optimize
+
+# ---------------------------------------------------------------------------
+# Front-end assets (Vite build)
 # ---------------------------------------------------------------------------
 FROM node:22.22-alpine AS assets
 WORKDIR /app
@@ -46,12 +61,9 @@ COPY --from=vendor /app/vendor ./vendor
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-# Stage 3: runtime
+# Base: FrankenPHP, PHP extensions and settings (shared by test and runtime)
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS runtime
-
-ARG APP_UID=10001
-ARG APP_GID=10001
+FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS base
 
 # curl is for the container health checks. The base image tag pins the
 # Debian release, so the curl package version is not pinned here.
@@ -63,14 +75,33 @@ RUN apt-get update \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY docker/php/iron-table.ini "$PHP_INI_DIR/conf.d/zz-iron-table.ini"
-
 WORKDIR /app
+
+# ---------------------------------------------------------------------------
+# Test: base + dev packages. Runs "php artisan test" in CI. Never deployed.
+# ---------------------------------------------------------------------------
+FROM base AS test
+COPY --from=vendor-dev /app/vendor ./vendor
+COPY . .
+COPY --from=assets /app/public/build ./public/build
+RUN php artisan package:discover --ansi
+CMD ["php", "artisan", "test"]
+
+# ---------------------------------------------------------------------------
+# Runtime: the production image (keep this stage last - it is the default)
+# ---------------------------------------------------------------------------
+FROM base AS runtime
+
+ARG APP_UID=10001
+ARG APP_GID=10001
+
 COPY --from=vendor /app/vendor ./vendor
 COPY . .
 COPY --from=assets /app/public/build ./public/build
 COPY docker/entrypoint.sh /usr/local/bin/iron-table-entrypoint
+COPY docker/Caddyfile /etc/iron-table/Caddyfile
 
-# 1. Composer scripts were skipped in stage 1, so build the package manifest.
+# 1. Composer scripts were skipped in stage "vendor", so build the package manifest.
 # 2. Make the non-root user. Only storage/, bootstrap/cache/ and the Caddy
 #    data and config folders are writable by it.
 RUN php artisan package:discover --ansi \
@@ -84,12 +115,12 @@ RUN php artisan package:discover --ansi \
 USER app
 
 # Port 8080 so that the non-root user can bind it. TLS is set at the
-# reverse proxy, or by FrankenPHP with a Caddyfile (planned, see docs).
+# reverse proxy (see docs/development.md, K2).
 EXPOSE 8080
 
-# The base image checks the Caddy admin port (2019). Only the "app" role runs
-# Caddy, so that check fails for "reverb" and "worker". Each role sets its own
-# health check in compose.yaml.
+# The base image checks the Caddy admin port (2019). The admin port is off
+# (docker/Caddyfile), and only the "app" role runs Caddy. Each role sets its
+# own health check in compose.yaml.
 HEALTHCHECK NONE
 
 ENTRYPOINT ["iron-table-entrypoint"]

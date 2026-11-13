@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# IRon Table web server (FrankenPHP / Caddy). Used by the "app" role.
+#
+# One public port for everything:
+#   /app/*   WebSocket traffic for live updates, forwarded to the "reverb" service
+#   other    the Laravel application (PHP)
+#
+# TLS is not set here. Put a reverse proxy in front for HTTPS (docs/development.md, K2).
+
+{
+	admin off
+	auto_https off
+	skip_install_trust
+
+	frankenphp
+}
+
+:{$APP_INTERNAL_PORT:8080} {
+	# Reverb (Pusher protocol) clients connect to /app/{app-key}.
+	# Do not use the URL prefix /app for Laravel routes.
+	handle /app/* {
+		reverse_proxy {$REVERB_UPSTREAM:reverb:8080}
+	}
+
+	handle {
+		root * /app/public
+		encode zstd br gzip
+		php_server
+	}
+}

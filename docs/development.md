@@ -16,6 +16,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | `compose.yaml` | The Docker Compose deployment: services, volumes and profiles |
 | `docker/Dockerfile` | The one image for the three roles: `app`, `reverb` and `worker` |
 | `docker/entrypoint.sh` | Starts the role that the container receives |
+| `docker/Caddyfile` | Web server: the PHP app and the live-update path `/app/*` on one port |
 | `docker/php/iron-table.ini` | PHP settings for production |
 | `.env.example` | All settings, with comments. Copy it to `.env`. |
 | `scripts/setup.sh` | Makes `.env` with random secrets (first start) |
@@ -26,7 +27,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 
 Do this procedure one time for the project. Do not do it again after the skeleton is in Git.
 
-The skeleton was made on 13 November 2026 with the GitHub workflow **Bootstrap Laravel skeleton**. Do not do this procedure again.
+The skeleton was made on 13 November 2026 with a one-time GitHub workflow (now removed). Do not do this procedure again.
 
 1. Clone the repository.
 2. Go to the repository folder.
@@ -70,12 +71,17 @@ The script makes Laravel 13 with Livewire 4 and Laravel Reverb. It never replace
 - `APP_DEBUG` is `false`. Do not set it to `true` on a server that other people can reach.
 - The containers send no telemetry.
 
-## 8. Known items
+## 8. Live updates
+
+- Browsers use one port only: `APP_PORT` (default 8080).
+- `docker/Caddyfile` forwards the path `/app/*` to the `reverb` service. Do not use the URL prefix `/app` for application routes.
+- The page gives the browser the public Reverb key at run time. One image works for any host name.
+
+## 9. Known items
 
 | ID | Item | Plan |
 | --- | --- | --- |
-| K1 | The browser settings for Reverb (`VITE_REVERB_*`) go into the front-end assets when the image is built. `.env` is not in the build. One image cannot serve different host names. | Give these values to the browser at run time (a meta tag), not at build time. |
-| K2 | TLS is not in the image yet. | Use a reverse proxy now. Add a FrankenPHP Caddyfile with automatic TLS later. |
+| K2 | TLS is not in the image yet. | Use a reverse proxy in front of port 8080 now. Add automatic TLS to `docker/Caddyfile` later. |
 | K3 | The root file system is not read-only yet (spec SEC-10). | Make it read-only after the first full test, with tmpfs for temporary files. |
 | K4 | The backup and restore commands (spec section 11.3) do not exist yet. | Add them with the first migrations. |
 | K5 | CI builds and starts the stack on GitHub runners only (amd64). Nobody has run it on a server or on arm64 yet. | Do the first server start with section 4. Add an arm64 build to CI. |

@@ -33,7 +33,8 @@ case "$role" in
         cache_config
         # No storage:link. Uploaded IR plans are private files and are never
         # served from public/ (spec SEC-04, SEC-09).
-        exec frankenphp php-server --root /app/public --listen ":${APP_INTERNAL_PORT:-8080}"
+        # docker/Caddyfile: PHP app and the /app/* WebSocket path to Reverb, one port.
+        exec frankenphp run --config /etc/iron-table/Caddyfile
         ;;
     reverb)
         cache_config
