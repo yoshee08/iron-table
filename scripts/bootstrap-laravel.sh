@@ -81,6 +81,18 @@ say "3/6 Publishing broadcasting and Reverb configuration"
 # install:broadcasting writes the Reverb settings into .env, so it needs one.
 # This temporary .env is deleted in step 5 and is never committed.
 cp "$app/.env.example" "$app/.env"
+# When install:broadcasting selects Reverb, Laravel loads routes/channels.php and
+# builds a Reverb connection at once, so the REVERB_* keys must already exist.
+# reverb:install keeps keys that exist. These placeholders are never used.
+cat >> "$app/.env" <<'ENV'
+
+REVERB_APP_ID=100000
+REVERB_APP_KEY=bootstrap-placeholder
+REVERB_APP_SECRET=bootstrap-placeholder
+REVERB_HOST=localhost
+REVERB_PORT=8080
+REVERB_SCHEME=http
+ENV
 # Two commands, checked against the Laravel 13.x and Reverb 1.x source:
 #  a) install:broadcasting publishes config/broadcasting.php, routes/channels.php
 #     and resources/js/echo.js. It skips its own Reverb step because Reverb is
