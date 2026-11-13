@@ -84,7 +84,12 @@ FROM base AS test
 COPY --from=vendor-dev /app/vendor ./vendor
 COPY . .
 COPY --from=assets /app/public/build ./public/build
-RUN php artisan package:discover --ansi
+# Laravel reads /app/.env at boot. A missing file is normal (settings come from
+# the environment), but PHPUnit reports the silenced read as a warning, and
+# phpunit.xml fails on warnings. An empty .env stops that. Environment values
+# still win: the .env loader never replaces a value that is already set.
+RUN php artisan package:discover --ansi \
+    && touch .env
 CMD ["php", "artisan", "test"]
 
 # ---------------------------------------------------------------------------
