@@ -8,7 +8,7 @@ IRon Table is an open-source, self-hosted application for incident response (IR)
 
 ## Status
 
-Build setup phase. The Docker build files are ready. The Laravel skeleton is not generated yet.
+Build setup phase. The Docker build files and the Laravel 13 skeleton are in place. No application features yet.
 
 | Document | Contents |
 | --- | --- |

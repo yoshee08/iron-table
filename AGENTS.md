@@ -1,47 +1,38 @@
-<laravel-boost-guidelines>
-# Laravel Application
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+# Rules for AI coding assistants — IRon Table
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+These rules apply to every AI assistant that works in this repository. They replace the default Laravel skeleton instructions.
 
-## Prerequisites
+## 1. Do not install software
 
-Verify that PHP and Composer are available:
+- Do not install PHP, Composer, Node.js, Laravel Boost or other tools on the host computer.
+- Do not run `curl ... | bash` or similar install commands.
+- All build, test and run steps use Docker (`compose.yaml`, `docker/Dockerfile`) or GitHub Actions (`.github/workflows/`).
+- If a task needs a tool that is not available, stop and tell the user.
 
-```sh
-php -v
-composer -V
-```
+## 2. Check work before each commit
 
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
+1. Check shell scripts with `bash -n` or `sh -n`.
+2. Check `compose.yaml` with `docker compose config` and a test `.env` outside the repository.
+3. Check YAML and JSON files with a parser.
+4. Scan the change for secrets, real names and real contact data.
+5. Write in the commit message what you checked and what you did not check.
+6. After the push, read the CI result. A failed CI run is not complete work.
 
-macOS:
+## 3. Commits
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
+- Make one commit for each logical change. Push it.
+- Never commit `.env`, keys, database dumps, `vendor/` or `node_modules/`.
+- Never commit real organization evidence (for example IR plans, screenshots, contact lists). Sample data must be fictional (spec SEC-14).
 
-Windows PowerShell:
+## 4. Source of truth
 
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
-```
+- The design specification (`docs/design-specification.html`) controls the design.
+- The development guide (`docs/development.md`) controls the build and start procedures.
+- If code and specification do not agree, tell the user. Do not change the specification without approval.
 
-Linux:
+## 5. Code and documents
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
-
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
-
-## Agent Setup
-
-Install Laravel Boost from the application root before making application changes:
-
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+- Our own source files start with `SPDX-License-Identifier: AGPL-3.0-or-later`. Scenario and mapping files use `CC-BY-4.0`.
+- Write documentation in ASD-STE100 Simplified Technical English: short sentences, active voice, one instruction per sentence.
+- Use the versions in `composer.lock`, `package-lock.json` and the `FROM` lines of `docker/Dockerfile`. Do not change a version without a reason in the commit message.
