@@ -1,0 +1,34 @@
+# --- Secrets and local config ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# --- Never commit real organization evidence or private skills ---
+# The repository holds fictional sample data only (spec SEC-14).
+3.06*/
+*evidence*/
+*SKILL.md
+.claude/settings.local.json
+
+# --- Laravel / PHP (added now so the scaffold starts clean) ---
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/storage/*.key
+/bootstrap/cache/*.php
+.phpunit.result.cache
+
+# --- Docker volumes and backups ---
+/docker-data/
+*.tar.gz
+*.sql
+*.dump
+
+# --- Editors and OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
