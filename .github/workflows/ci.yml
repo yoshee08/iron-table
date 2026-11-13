@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check shell scripts
-        run: shellcheck docker/entrypoint.sh scripts/bootstrap-laravel.sh
+        run: shellcheck docker/entrypoint.sh scripts/bootstrap-laravel.sh scripts/setup.sh
 
       - name: Check Dockerfile
         run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
@@ -57,14 +57,8 @@ jobs:
 
       - name: Make a test .env
         if: steps.skeleton.outputs.present == 'true'
-        run: |
-          cp .env.example .env
-          key="base64:$(openssl rand -base64 32)"
-          sed -i "s|^APP_KEY=$|APP_KEY=${key}|" .env
-          sed -i -e 's/^DB_PASSWORD=$/DB_PASSWORD=ci-password/' \
-                 -e 's/^REVERB_APP_ID=$/REVERB_APP_ID=100001/' \
-                 -e 's/^REVERB_APP_KEY=$/REVERB_APP_KEY=ci-key/' \
-                 -e 's/^REVERB_APP_SECRET=$/REVERB_APP_SECRET=ci-secret/' .env
+        # The same script that users run (README "Start"), so CI tests it too.
+        run: ./scripts/setup.sh
 
       - name: Build and start all services
         if: steps.skeleton.outputs.present == 'true'

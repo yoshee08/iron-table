@@ -1,0 +1,38 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+# Rules for AI coding assistants — IRon Table
+
+These rules apply to every AI assistant that works in this repository. They replace the default Laravel skeleton instructions.
+
+## 1. Do not install software
+
+- Do not install PHP, Composer, Node.js, Laravel Boost or other tools on the host computer.
+- Do not run `curl ... | bash` or similar install commands.
+- All build, test and run steps use Docker (`compose.yaml`, `docker/Dockerfile`) or GitHub Actions (`.github/workflows/`).
+- If a task needs a tool that is not available, stop and tell the user.
+
+## 2. Check work before each commit
+
+1. Check shell scripts with `bash -n` or `sh -n`.
+2. Check `compose.yaml` with `docker compose config` and a test `.env` outside the repository.
+3. Check YAML and JSON files with a parser.
+4. Scan the change for secrets, real names and real contact data.
+5. Write in the commit message what you checked and what you did not check.
+6. After the push, read the CI result. A failed CI run is not complete work.
+
+## 3. Commits
+
+- Make one commit for each logical change. Push it.
+- Never commit `.env`, keys, database dumps, `vendor/` or `node_modules/`.
+- Never commit real organization evidence (for example IR plans, screenshots, contact lists). Sample data must be fictional (spec SEC-14).
+
+## 4. Source of truth
+
+- The design specification (`docs/design-specification.html`) controls the design.
+- The development guide (`docs/development.md`) controls the build and start procedures.
+- If code and specification do not agree, tell the user. Do not change the specification without approval.
+
+## 5. Code and documents
+
+- Our own source files start with `SPDX-License-Identifier: AGPL-3.0-or-later`. Scenario and mapping files use `CC-BY-4.0`.
+- Write documentation in ASD-STE100 Simplified Technical English: short sentences, active voice, one instruction per sentence.
+- Use the versions in `composer.lock`, `package-lock.json` and the `FROM` lines of `docker/Dockerfile`. Do not change a version without a reason in the commit message.
