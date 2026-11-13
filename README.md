@@ -1,25 +1,47 @@
 # IRon Table
 
-IRon Table is an open-source, self-hosted application for incident response (IR) tabletop exercises.
+A self-hosted app for incident response tabletop exercises.
 
-- A live moderator controls each exercise.
-- Participants use the IR plan of their own organization to make decisions.
-- AI assistance is optional. The application works fully without it.
+## You need
 
-## Status
+[Docker](https://docs.docker.com/get-docker/) (with Docker Compose).
 
-Build setup phase. The Docker build files and the Laravel 13 skeleton are in place. No application features yet.
+## Start
 
-| Document | Contents |
+```sh
+git clone https://github.com/yoshee08/iron-table.git
+cd iron-table
+./scripts/setup.sh
+docker compose up -d
+```
+
+Open **http://localhost:8080**
+
+The first start takes a few minutes. Later starts take seconds.
+
+## Stop
+
+```sh
+docker compose down
+```
+
+Your data is kept.
+
+## Other commands
+
+| To do this | Run this |
 | --- | --- |
-| [`docs/design-specification.html`](docs/design-specification.html) | Approved design specification |
-| [`docs/development.md`](docs/development.md) | How to bootstrap, build and start the application |
+| Start again | `docker compose up -d` |
+| See if it is running | `docker compose ps` |
+| See the logs | `docker compose logs -f` |
+| Update to the latest version | `git pull && docker compose up -d --build` |
+| Delete everything, including all data | `docker compose down -v` |
 
-## Technology
+## More
 
-PHP 8.4, Laravel 13, Livewire 4, Laravel Reverb, PostgreSQL 16 with pgvector, FrankenPHP, Docker Compose.
+- [Development guide](docs/development.md): settings, optional services, security
+- [Design specification](docs/design-specification.html)
 
 ## License
 
-- Code: [AGPL-3.0-or-later](LICENSE)
-- Scenarios and framework mappings: [CC BY 4.0](LICENSE-CONTENT)
+Code: [AGPL-3.0](LICENSE). Scenarios: [CC BY 4.0](LICENSE-CONTENT).

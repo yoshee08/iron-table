@@ -18,7 +18,8 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | `docker/entrypoint.sh` | Starts the role that the container receives |
 | `docker/php/iron-table.ini` | PHP settings for production |
 | `.env.example` | All settings, with comments. Copy it to `.env`. |
-| `scripts/bootstrap-laravel.sh` | One-time script that makes the Laravel skeleton |
+| `scripts/setup.sh` | Makes `.env` with random secrets (first start) |
+| `scripts/bootstrap-laravel.sh` | One-time script that made the Laravel skeleton |
 | `docs/` | Design specification and guides |
 
 ## 3. Bootstrap the Laravel skeleton (one time only)
@@ -38,15 +39,11 @@ The script makes Laravel 13 with Livewire 4 and Laravel Reverb. It never replace
 
 ## 4. First start
 
-1. Copy `.env.example` to `.env`.
-2. In `.env`, set `DB_PASSWORD` to a long random value.
-3. In `.env`, set `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` to random values.
-4. Build the image: `docker compose build`.
-5. Make an application key: `docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:".base64_encode(random_bytes(32)), PHP_EOL;'`.
-6. Put the key from step 5 in `APP_KEY` in `.env`.
-7. Start the services: `docker compose up -d`.
-8. Wait until all services show `healthy`: `docker compose ps`.
-9. Open `APP_URL` in a browser.
+1. Run `./scripts/setup.sh`. It makes `.env` with new random secrets. It does not change an `.env` that exists.
+2. Optional: change other settings in `.env`, for example `APP_URL`.
+3. Start the services: `docker compose up -d`. The first start builds the image.
+4. Wait until all services show `healthy`: `docker compose ps`.
+5. Open `APP_URL` in a browser. The default is http://localhost:8080.
 
 ## 5. Daily commands
 
