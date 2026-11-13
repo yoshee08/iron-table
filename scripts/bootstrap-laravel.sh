@@ -78,6 +78,9 @@ php_in "$app" artisan package:discover --ansi
 
 # --- 3. Broadcasting files ---------------------------------------------------
 say "3/6 Publishing broadcasting and Reverb configuration"
+# install:broadcasting writes the Reverb settings into .env, so it needs one.
+# This temporary .env is deleted in step 5 and is never committed.
+cp "$app/.env.example" "$app/.env"
 # This command can also try to run npm, which is not in the composer image.
 # The result is checked below, so a failure here is only a warning.
 if ! php_in "$app" artisan install:broadcasting --reverb --no-interaction; then
