@@ -25,6 +25,8 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 
 Do this procedure one time for the project. Do not do it again after the skeleton is in Git.
 
+The skeleton was made on 13 November 2026 with the GitHub workflow **Bootstrap Laravel skeleton**. Do not do this procedure again.
+
 1. Clone the repository.
 2. Go to the repository folder.
 3. Run `scripts/bootstrap-laravel.sh`.
@@ -79,4 +81,4 @@ The script makes Laravel 13 with Livewire 4 and Laravel Reverb. It never replace
 | K2 | TLS is not in the image yet. | Use a reverse proxy now. Add a FrankenPHP Caddyfile with automatic TLS later. |
 | K3 | The root file system is not read-only yet (spec SEC-10). | Make it read-only after the first full test, with tmpfs for temporary files. |
 | K4 | The backup and restore commands (spec section 11.3) do not exist yet. | Add them with the first migrations. |
-| K5 | Nobody has run these build files yet. They were written and checked for syntax only. | Run the first build and fix any errors. CI does this automatically after the bootstrap. |
+| K5 | CI builds and starts the stack on GitHub runners only (amd64). Nobody has run it on a server or on arm64 yet. | Do the first server start with section 4. Add an arm64 build to CI. |
