@@ -40,6 +40,30 @@ jobs:
           docker compose config -q
           docker compose --profile redis --profile ai config -q
 
+  windows-setup:
+    # scripts/setup.ps1 on real Windows with Windows PowerShell 5.1 (what users have).
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Run scripts/setup.ps1
+        shell: cmd
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup.ps1
+
+      - name: Check the .env file
+        shell: powershell
+        run: |
+          $env_ = [IO.File]::ReadAllText("$PWD\.env")
+          if ($env_.Contains("`r")) { throw '.env has CRLF line endings' }
+          foreach ($pattern in '(?m)^APP_KEY=base64:.{44}$', '(?m)^DB_PASSWORD=[0-9a-f]{48}$',
+                   '(?m)^REVERB_APP_ID=[1-9][0-9]{5}$', '(?m)^REVERB_APP_KEY=[0-9a-f]{32}$',
+                   '(?m)^INITIAL_ADMIN_PASSWORD=[0-9a-f]{24}$') {
+              if ($env_ -notmatch $pattern) { throw "Missing or wrong: $pattern" }
+          }
+          $second = powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup.ps1 | Out-String
+          if ($second -notmatch 'already exists') { throw "Second run did not stop: $second" }
+          Write-Output 'OK'
+
   security:
     runs-on: ubuntu-24.04
     steps:
