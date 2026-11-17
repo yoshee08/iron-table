@@ -42,3 +42,11 @@ These rules apply to every AI assistant that works in this repository. They repl
 - Our own source files start with `SPDX-License-Identifier: AGPL-3.0-or-later`. Scenario and mapping files use `CC-BY-4.0`.
 - Write documentation in ASD-STE100 Simplified Technical English: short sentences, active voice, one instruction per sentence.
 - Use the versions in `composer.lock`, `package-lock.json` and the `FROM` lines of `docker/Dockerfile`. Do not change a version without a reason in the commit message.
+
+## 7. Keep it simple (KISS)
+
+- Use the simplest solution that meets the specification.
+- Prefer fewer files, steps, services, settings and options.
+- Do not add features, abstractions or options that nobody asked for.
+- Make one pull request for each change. Do not stack pull requests.
+- If the specification asks for something complex, tell the user and propose a simpler option.
