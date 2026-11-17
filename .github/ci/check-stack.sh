@@ -6,8 +6,8 @@
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-# shellcheck source=/dev/null  # checked on its own (scripts/ci/lib.sh)
-. scripts/ci/lib.sh
+# shellcheck source=/dev/null  # checked on its own (.github/ci/lib.sh)
+. .github/ci/lib.sh
 
 echo "1/3 Health endpoint"
 curl -fsS http://127.0.0.1:8080/up >/dev/null

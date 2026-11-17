@@ -4,7 +4,7 @@
 #   validate  shell scripts, Dockerfile, Compose file
 #   security  Composer and npm advisories (spec SEC-13)
 #   test      PHP code style (Pint) and PHP tests against PostgreSQL 18
-#   build     production image: start all services, then scripts/ci/*.sh
+#   build     production image: start all services, then .github/ci/*.sh
 #
 # Actions are pinned to full commit SHAs. Dependabot updates them.
 
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Check shell scripts
-        run: shellcheck docker/entrypoint.sh scripts/*.sh scripts/ci/*.sh
+        run: shellcheck docker/entrypoint.sh scripts/*.sh .github/ci/*.sh
 
       - name: Check Dockerfile
         run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
@@ -46,10 +46,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Composer advisories
-        run: docker run --rm -v "$PWD:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
+        run: docker run --rm -v "$PWD/src:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
 
       - name: npm advisories (high and critical, reviewed exceptions allowed)
-        run: ./scripts/ci/npm-audit.sh
+        run: ./.github/ci/npm-audit.sh
 
   test:
     needs: validate
@@ -79,7 +79,7 @@ jobs:
         run: docker run --rm iron-table:test vendor/bin/pint --test
 
       - name: Run the PHP tests against PostgreSQL 18
-        # These values replace the SQLite defaults in phpunit.xml.
+        # These values replace the SQLite defaults in src/phpunit.xml.
         run: |
           docker run --rm --network host \
             -e APP_KEY="base64:$(openssl rand -base64 32)" \
@@ -102,13 +102,13 @@ jobs:
         run: docker compose up -d --build --wait --wait-timeout 300
 
       - name: Check the running stack (health, live updates, first administrator)
-        run: ./scripts/ci/check-stack.sh
+        run: ./.github/ci/check-stack.sh
 
       - name: Backup and restore round trip
-        run: ./scripts/ci/backup-roundtrip.sh
+        run: ./.github/ci/backup-roundtrip.sh
 
       - name: Scan the image (report HIGH, fail on fixable CRITICAL)
-        run: ./scripts/ci/scan-image.sh iron-table:local
+        run: ./.github/ci/scan-image.sh iron-table:local
 
       - name: Show logs after a failure
         if: failure()

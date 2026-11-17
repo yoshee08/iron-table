@@ -13,8 +13,8 @@ on:
   pull_request:
     paths:
       - docker/**
-      - composer.lock
-      - package-lock.json
+      - src/composer.lock
+      - src/package-lock.json
       - .github/workflows/arm64.yml
   schedule:
     - cron: "0 5 * * 1"
