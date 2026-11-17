@@ -4,6 +4,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -12,6 +14,8 @@ use Tests\TestCase;
  */
 class ReverbMetaTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_page_contains_the_public_reverb_key(): void
     {
         config([
@@ -19,7 +23,7 @@ class ReverbMetaTest extends TestCase
             'broadcasting.connections.reverb.secret' => 'secret-test-value',
         ]);
 
-        $response = $this->get('/');
+        $response = $this->actingAs(User::factory()->create())->get('/dashboard');
 
         $response->assertOk();
         $response->assertSee('<meta name="reverb-key" content="public-test-key">', false);

@@ -4,6 +4,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -26,6 +27,7 @@ class FirstAdminCommandTest extends TestCase
 
         $user = User::query()->sole();
         $this->assertSame('admin@example.com', $user->email);
+        $this->assertSame(Role::Admin, $user->role);
         $this->assertTrue(Hash::check('correct-horse-battery', $user->password));
     }
 
