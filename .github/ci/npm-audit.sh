@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # CI npm audit (spec SEC-13): fail on high or critical advisories, except the
-# reviewed exceptions in scripts/ci/npm-audit-allowlist.txt.
+# reviewed exceptions in .github/ci/npm-audit-allowlist.txt.
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-allowlist=scripts/ci/npm-audit-allowlist.txt
-report="$(npm audit --package-lock-only --json || true)"
+allowlist=.github/ci/npm-audit-allowlist.txt
+report="$(cd src || exit 1; npm audit --package-lock-only --json || true)"
 
 found="$(jq -r '.vulnerabilities[].via[] | objects
     | select(.severity == "high" or .severity == "critical")

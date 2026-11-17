@@ -13,6 +13,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 
 | Path | Contents |
 | --- | --- |
+| `src/` | The Laravel application (PHP code, views, tests, Composer and npm files) |
 | `compose.yaml` | The Docker Compose deployment: services, volumes and profiles |
 | `docker/Dockerfile` | The one image for the three roles: `app`, `reverb` and `worker` |
 | `docker/entrypoint.sh` | Starts the role that the container receives |
@@ -21,7 +22,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | `.env.example` | All settings, with comments. Copy it to `.env`. |
 | `scripts/setup.sh` | Makes `.env` with random secrets (first start) |
 | `scripts/backup.sh`, `scripts/restore.sh` | Back up and restore the database and uploaded files |
-| `scripts/ci/` | Checks that CI runs on the started stack |
+| `.github/` | CI workflows, CI check scripts (`.github/ci/`), Dependabot, security policy |
 | `docs/` | Design specification and guides |
 
 ## 3. First start

@@ -5,8 +5,8 @@
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-# shellcheck source=/dev/null  # checked on its own (scripts/ci/lib.sh)
-. scripts/ci/lib.sh
+# shellcheck source=/dev/null  # checked on its own (.github/ci/lib.sh)
+. .github/ci/lib.sh
 
 marker=/app/storage/app/private/ci-marker.txt
 
