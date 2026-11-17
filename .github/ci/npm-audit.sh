@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 allowlist=.github/ci/npm-audit-allowlist.txt
-report="$(cd src && npm audit --package-lock-only --json || true)"
+report="$(cd src || exit 1; npm audit --package-lock-only --json || true)"
 
 found="$(jq -r '.vulnerabilities[].via[] | objects
     | select(.severity == "high" or .severity == "critical")
