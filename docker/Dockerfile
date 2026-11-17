@@ -65,10 +65,13 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS base
 
-# curl is for the container health checks. The base image tag pins the
-# Debian release, so the curl package version is not pinned here.
+# 1. Apply the Debian security updates that are newer than the base image.
+#    The CI image scan fails on fixable critical findings, so rebuild often.
+# 2. curl is for the container health checks. The base image tag pins the
+#    Debian release, so the curl package version is not pinned here.
 # hadolint ignore=DL3008
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && install-php-extensions pdo_pgsql intl zip opcache pcntl bcmath redis \
