@@ -14,6 +14,7 @@
             <nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3" aria-label="Main">
                 <a href="{{ route('dashboard') }}" class="font-semibold">{{ config('app.name') }}</a>
                 <a href="{{ route('dashboard') }}" class="text-sm underline-offset-4 hover:underline">Dashboard</a>
+                <a href="{{ route('plans.index') }}" class="text-sm underline-offset-4 hover:underline">IR plan</a>
                 @can('admin')
                     <a href="{{ route('admin.users.index') }}" class="text-sm underline-offset-4 hover:underline">Users</a>
                 @endcan
