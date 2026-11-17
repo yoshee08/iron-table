@@ -1,0 +1,4 @@
+# Reviewed npm advisories that CI accepts. One GitHub advisory ID per line.
+# Give the reason and a review date. Remove the line when a fix is available.
+
+GHSA-fc5q-39xc-vjpf  # picomatch ReDoS. Build time only (Vite), trusted input, not in the runtime image. No fixed picomatch version on 2026-11-17. Review by 2026-12-17.

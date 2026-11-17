@@ -39,6 +39,11 @@ These rules apply to every AI assistant that works in this repository. They repl
 
 ## 6. Code and documents
 
+- Keep the codebase small and easy to review. Every file, package and function must be used by the application, a test, CI or the documentation.
+- Do not add example code, commented-out code or unused settings. When the last use of something goes, remove it in the same pull request.
+- Keep workflow files short. Put more than a few lines of shell in `scripts/ci/`, so shellcheck checks it.
+- PHP code must pass Laravel Pint (`vendor/bin/pint --test`). CI checks this.
+
 - Our own source files start with `SPDX-License-Identifier: AGPL-3.0-or-later`. Scenario and mapping files use `CC-BY-4.0`.
 - Write documentation in ASD-STE100 Simplified Technical English: short sentences, active voice, one instruction per sentence.
 - Use the versions in `composer.lock`, `package-lock.json` and the `FROM` lines of `docker/Dockerfile`. Do not change a version without a reason in the commit message.
