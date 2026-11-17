@@ -64,6 +64,9 @@ FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS base
 
 # Debian security updates (CI fails on fixable critical findings) and curl for
 # health checks. The base image tag pins the Debian release.
+# A new SECURITY_UPDATES value rebuilds this layer. CI sets the ISO week, so a
+# cached build still gets fresh security updates every week.
+ARG SECURITY_UPDATES=manual
 # hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
