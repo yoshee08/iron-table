@@ -116,6 +116,32 @@ jobs:
           echo "HTTP status: ${code}"
           test "${code}" = "101"
 
+      - name: Check the first administrator
+        run: |
+          email="$(grep '^INITIAL_ADMIN_EMAIL=' .env | cut -d= -f2)"
+          # shellcheck disable=SC2016
+          count="$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM users"')"
+          echo "users: ${count}"
+          test "${count}" = "1"
+          docker compose logs app | grep -F "First administrator created: ${email}"
+
+      - name: Backup and restore round trip
+        run: |
+          psql_db() { docker compose exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -tAc \"$1\""; }
+          # A marker file in the storage volume.
+          docker compose exec -T app sh -c 'echo ci-marker > /app/storage/app/private/ci-marker.txt'
+          ./scripts/backup.sh
+          backup="$(ls -1 backups/iron-table-*.tar | tail -n 1)"
+          # Damage the data.
+          psql_db "DELETE FROM users"
+          docker compose exec -T app rm /app/storage/app/private/ci-marker.txt
+          test "$(psql_db 'SELECT count(*) FROM users')" = "0"
+          # Restore and check.
+          ./scripts/restore.sh --yes "${backup}"
+          test "$(psql_db 'SELECT count(*) FROM users')" = "1"
+          test "$(docker compose exec -T app cat /app/storage/app/private/ci-marker.txt)" = "ci-marker"
+          curl -fsS http://127.0.0.1:8080/up
+
       - name: Scan the image (fail on fixable critical findings)
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 \

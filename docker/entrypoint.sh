@@ -31,6 +31,9 @@ case "$role" in
             php artisan migrate --force --no-interaction
         fi
         cache_config
+        # Creates the first administrator only when no user exists (scripts/setup.sh
+        # writes INITIAL_ADMIN_*). Invalid settings stop the start with an error.
+        php artisan iron-table:first-admin --no-interaction
         # No storage:link. Uploaded IR plans are private files and are never
         # served from public/ (spec SEC-04, SEC-09).
         # docker/Caddyfile: PHP app and the /app/* WebSocket path to Reverb, one port.

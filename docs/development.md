@@ -20,6 +20,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | `docker/php/iron-table.ini` | PHP settings for production |
 | `.env.example` | All settings, with comments. Copy it to `.env`. |
 | `scripts/setup.sh` | Makes `.env` with random secrets (first start) |
+| `scripts/backup.sh`, `scripts/restore.sh` | Back up and restore the database and uploaded files |
 | `scripts/bootstrap-laravel.sh` | One-time script that made the Laravel skeleton |
 | `docs/` | Design specification and guides |
 
@@ -63,25 +64,34 @@ The script makes Laravel 13 with Livewire 4 and Laravel Reverb. It never replace
 - The database is in the volume `pgdata`.
 - Uploaded files are in the volume `storage`.
 - `docker compose down` keeps the volumes. `docker compose down -v` deletes them and all data.
+- `./scripts/backup.sh` writes one file to `backups/` with the database and the uploaded files.
+- `./scripts/restore.sh backups/<file>.tar` replaces all data with the backup. It asks first.
+- A backup does not contain `.env`. Keep a safe copy of `APP_KEY`. The restore needs the same `APP_KEY`.
 
-## 7. Security defaults
+## 7. First administrator
+
+- `scripts/setup.sh` writes `INITIAL_ADMIN_EMAIL` and a random `INITIAL_ADMIN_PASSWORD` to `.env`.
+- On the first start, the app container makes this account. It does this only when no user exists.
+- After the first login, remove `INITIAL_ADMIN_PASSWORD` from `.env`.
+- Note: the login screen does not exist yet. Roles do not exist yet (spec section 10).
+
+## 8. Security defaults
 
 - The ports listen on `127.0.0.1` only. Set `APP_BIND` to change this.
 - The containers run as a non-root user (UID 10001) with `no-new-privileges`.
 - `APP_DEBUG` is `false`. Do not set it to `true` on a server that other people can reach.
 - The containers send no telemetry.
 
-## 8. Live updates
+## 9. Live updates
 
 - Browsers use one port only: `APP_PORT` (default 8080).
 - `docker/Caddyfile` forwards the path `/app/*` to the `reverb` service. Do not use the URL prefix `/app` for application routes.
 - The page gives the browser the public Reverb key at run time. One image works for any host name.
 
-## 9. Known items
+## 10. Known items
 
 | ID | Item | Plan |
 | --- | --- | --- |
 | K2 | TLS is not in the image yet. | Use a reverse proxy in front of port 8080 now. Add automatic TLS to `docker/Caddyfile` later. |
 | K3 | The root file system is not read-only yet (spec SEC-10). | Make it read-only after the first full test, with tmpfs for temporary files. |
-| K4 | The backup and restore commands (spec section 11.3) do not exist yet. | Add them with the first migrations. |
 | K5 | CI builds and starts the stack on GitHub runners only (amd64). Nobody has run it on a server or on arm64 yet. | Do the first server start with section 4. Add an arm64 build to CI. |
