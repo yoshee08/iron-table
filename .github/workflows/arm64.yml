@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Builds the production image for linux/arm64 (spec 11.3, item 3) with QEMU
+# emulation, then checks PHP and the extensions in that image.
+# Emulation is slow, so this runs only when the image inputs change, on main,
+# weekly, and by hand.
+
+name: arm64 build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - docker/**
+      - composer.lock
+      - package-lock.json
+      - .github/workflows/arm64.yml
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arm64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arm64:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          image: tonistiigi/binfmt:qemu-v10.2.3
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build the runtime image for linux/arm64
+        run: |
+          docker buildx build --platform linux/arm64 --target runtime \
+            -f docker/Dockerfile -t iron-table:arm64 --load .
+
+      - name: Check the arm64 image
+        run: |
+          arch="$(docker image inspect iron-table:arm64 --format '{{.Architecture}}')"
+          echo "image architecture: ${arch}"
+          test "${arch}" = "arm64"
+          docker run --rm --platform linux/arm64 --entrypoint php iron-table:arm64 \
+            -r 'echo php_uname("m"), " PHP ", PHP_VERSION, PHP_EOL;'
+          found="$(docker run --rm --platform linux/arm64 --entrypoint php iron-table:arm64 -m \
+            | grep -cxE 'pdo_pgsql|intl|redis|pcntl|bcmath|zip')"
+          echo "required extensions found: ${found} of 6"
+          test "${found}" = "6"
