@@ -14,6 +14,9 @@
             <nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3" aria-label="Main">
                 <a href="{{ route('dashboard') }}" class="font-semibold">{{ config('app.name') }}</a>
                 <a href="{{ route('dashboard') }}" class="text-sm underline-offset-4 hover:underline">Dashboard</a>
+                @can('admin')
+                    <a href="{{ route('admin.users.index') }}" class="text-sm underline-offset-4 hover:underline">Users</a>
+                @endcan
                 <a href="{{ route('account') }}" class="text-sm underline-offset-4 hover:underline">Account</a>
                 <span class="ml-auto text-sm text-zinc-600 dark:text-zinc-400">{{ auth()->user()->name }} ({{ auth()->user()->role->label() }})</span>
                 <form method="POST" action="{{ route('logout') }}">

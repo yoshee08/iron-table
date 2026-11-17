@@ -17,6 +17,17 @@
 }
 
 :{$APP_INTERNAL_PORT:8080} {
+	# Security headers (backlog B2). The page loads scripts, styles and data only
+	# from this server: no inline scripts, no frames, no other sites.
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
 	# Reverb (Pusher protocol) clients connect to /app/{app-key}.
 	# Do not use the URL prefix /app for Laravel routes.
 	handle /app/* {
