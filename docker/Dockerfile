@@ -50,7 +50,7 @@ RUN composer dump-autoload --no-scripts --optimize
 # ---------------------------------------------------------------------------
 # Front-end assets (Vite build)
 # ---------------------------------------------------------------------------
-FROM node:22.22-alpine AS assets
+FROM node:26.13-alpine AS assets
 WORKDIR /app
 COPY src/package.json src/package-lock.json ./
 RUN npm ci --no-audit --no-fund
