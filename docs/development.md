@@ -45,7 +45,14 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | Start with local AI | `docker compose --profile ai up -d` |
 | Rebuild after a code change | `docker compose build && docker compose up -d` |
 
-## 5. Data
+## 5. Change dependencies
+
+1. Open GitHub > Actions > **Update dependencies** > Run workflow.
+2. Select `composer` or `npm`. Type the arguments, for example `require vendor/package:^1.2`.
+3. Type a new branch name. The workflow pushes the changed lock files to it.
+4. Open a pull request from that branch. CI tests it.
+
+## 6. Data
 
 - The database is in the volume `pgdata`.
 - Uploaded files are in the volume `storage`.
@@ -54,26 +61,26 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - `./scripts/restore.sh backups/<file>.tar` replaces all data with the backup. It asks first.
 - A backup does not contain `.env`. Keep a safe copy of `APP_KEY`. The restore needs the same `APP_KEY`.
 
-## 6. First administrator
+## 7. First administrator
 
 - `scripts/setup.sh` writes `INITIAL_ADMIN_EMAIL` and a random `INITIAL_ADMIN_PASSWORD` to `.env`.
 - On the first start, the app container makes this account. It does this only when no user exists.
 - After the first login, remove `INITIAL_ADMIN_PASSWORD` from `.env`.
 - Note: the login screen does not exist yet. Roles do not exist yet (spec section 10).
 
-## 7. Security defaults
+## 8. Security defaults
 
 - The ports listen on `127.0.0.1` only. Set `APP_BIND` to change this.
 - The containers run as a non-root user (UID 10001) with `no-new-privileges`.
 - `APP_DEBUG` is `false`. Do not set it to `true` on a server that other people can reach.
 - The containers send no telemetry.
 
-## 8. Live updates
+## 9. Live updates
 
 - Browsers use one port only: `APP_PORT` (default 8080).
 - `docker/Caddyfile` forwards the path `/app/*` to the `reverb` service. Do not use the URL prefix `/app` for application routes.
 - The page gives the browser the public Reverb key at run time. One image works for any host name.
 
-## 9. Known limitations
+## 10. Known limitations
 
 The design specification lists the open limitations and their plans: `docs/design-specification.html`, section 15.4.

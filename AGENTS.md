@@ -9,6 +9,7 @@ These rules apply to every AI assistant that works in this repository. They repl
 - Do not run `curl ... | bash` or similar install commands.
 - All build, test and run steps use Docker (`compose.yaml`, `docker/Dockerfile`) or GitHub Actions (`.github/workflows/`).
 - If a task needs a tool that is not available, stop and tell the user.
+- To add, remove or update a Composer or npm package, run the GitHub workflow **Update dependencies** (`.github/workflows/deps.yml`). It pushes the new lock files to a branch.
 
 ## 2. Check work before each commit
 
