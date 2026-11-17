@@ -2,7 +2,7 @@
 //
 // Live updates (Laravel Echo + Reverb).
 // The settings come from the page at run time, not from the build, so one image
-// works for any host name (docs/development.md, K1):
+// works for any host name:
 //   - key:  <meta name="reverb-key"> (resources/views/partials/reverb-meta.blade.php)
 //   - host, port, TLS: the same as the page. docker/Caddyfile forwards /app/* to Reverb.
 

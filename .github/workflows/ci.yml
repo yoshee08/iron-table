@@ -3,9 +3,8 @@
 # Checks every push to main and every pull request.
 #   validate  shell scripts, Dockerfile, Compose file
 #   security  Composer and npm advisories (spec SEC-13)
-#   test      PHP tests (php artisan test) against PostgreSQL 18
-#   build     production image: start all services, /up, live-update path,
-#             image vulnerability scan (spec SEC-13)
+#   test      PHP code style (Pint) and PHP tests against PostgreSQL 18
+#   build     production image: start all services, then scripts/ci/*.sh
 #
 # Actions are pinned to full commit SHAs. Dependabot updates them.
 
@@ -30,7 +29,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Check shell scripts
-        run: shellcheck docker/entrypoint.sh scripts/*.sh
+        run: shellcheck docker/entrypoint.sh scripts/*.sh scripts/ci/*.sh
 
       - name: Check Dockerfile
         run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
@@ -76,6 +75,9 @@ jobs:
       - name: Build the test image
         run: docker build --target test -t iron-table:test -f docker/Dockerfile .
 
+      - name: Check the PHP code style (Laravel Pint)
+        run: docker run --rm iron-table:test vendor/bin/pint --test
+
       - name: Run the PHP tests against PostgreSQL 18
         # These values replace the SQLite defaults in phpunit.xml.
         run: |
@@ -99,60 +101,14 @@ jobs:
       - name: Build and start all services
         run: docker compose up -d --build --wait --wait-timeout 300
 
-      - name: Check the health endpoint
-        run: |
-          curl -fsS http://127.0.0.1:8080/up
-          docker compose ps
-
-      - name: Check the live-update path (WebSocket through the app port)
-        run: |
-          key="$(grep '^REVERB_APP_KEY=' .env | cut -d= -f2)"
-          # A working path answers "101 Switching Protocols" and stays open,
-          # so curl stops at --max-time. Only the HTTP status is checked.
-          code="$(curl -s -o /dev/null -w '%{http_code}' --http1.1 --max-time 5 \
-            -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
-            -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SXJvblRhYmxlQ0lUZXN0IQ==' \
-            "http://127.0.0.1:8080/app/${key}?protocol=7&client=js&version=8.4.0" || true)"
-          echo "HTTP status: ${code}"
-          test "${code}" = "101"
-
-      - name: Check the first administrator
-        run: |
-          email="$(grep '^INITIAL_ADMIN_EMAIL=' .env | cut -d= -f2)"
-          # shellcheck disable=SC2016
-          count="$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM users"')"
-          echo "users: ${count}"
-          test "${count}" = "1"
-          docker compose logs app | grep -F "First administrator created: ${email}"
+      - name: Check the running stack (health, live updates, first administrator)
+        run: ./scripts/ci/check-stack.sh
 
       - name: Backup and restore round trip
-        run: |
-          psql_db() { docker compose exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -tAc \"$1\""; }
-          # A marker file in the storage volume.
-          docker compose exec -T app sh -c 'echo ci-marker > /app/storage/app/private/ci-marker.txt'
-          ./scripts/backup.sh
-          backup="$(ls -1 backups/iron-table-*.tar | tail -n 1)"
-          # Damage the data.
-          psql_db "DELETE FROM users"
-          docker compose exec -T app rm /app/storage/app/private/ci-marker.txt
-          test "$(psql_db 'SELECT count(*) FROM users')" = "0"
-          # Restore and check.
-          ./scripts/restore.sh --yes "${backup}"
-          test "$(psql_db 'SELECT count(*) FROM users')" = "1"
-          test "$(docker compose exec -T app cat /app/storage/app/private/ci-marker.txt)" = "ci-marker"
-          curl -fsS http://127.0.0.1:8080/up
+        run: ./scripts/ci/backup-roundtrip.sh
 
-      - name: Scan the image (fail on fixable critical findings)
-        run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 \
-            image --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
-            iron-table:local
-
-      - name: Report high findings (does not fail)
-        run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 \
-            image --scanners vuln --severity HIGH --ignore-unfixed --exit-code 0 --no-progress \
-            iron-table:local
+      - name: Scan the image (report HIGH, fail on fixable CRITICAL)
+        run: ./scripts/ci/scan-image.sh iron-table:local
 
       - name: Show logs after a failure
         if: failure()

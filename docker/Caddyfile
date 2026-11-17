@@ -6,7 +6,7 @@
 #   /app/*   WebSocket traffic for live updates, forwarded to the "reverb" service
 #   other    the Laravel application (PHP)
 #
-# TLS is not set here. Put a reverse proxy in front for HTTPS (docs/development.md, K2).
+# TLS is not set here. Put a reverse proxy in front for HTTPS.
 
 {
 	admin off
