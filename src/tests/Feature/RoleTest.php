@@ -42,7 +42,7 @@ class RoleTest extends TestCase
 
     public function test_the_page_shows_the_role(): void
     {
-        $this->actingAs(User::factory()->moderator()->create())
+        $this->actingAs(User::factory()->moderator()->withTwoFactor()->create())
             ->get('/dashboard')
             ->assertSee('(Moderator)');
     }

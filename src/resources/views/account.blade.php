@@ -2,6 +2,7 @@
 @php
     $user = auth()->user();
     $messages = [
+        'two-factor-required' => 'Your role needs two-factor authentication. Turn it on below to continue.',
         'password-updated' => 'Your password is changed.',
         'two-factor-authentication-enabled' => 'Scan the QR code, then type a code to finish.',
         'two-factor-authentication-confirmed' => 'Two-factor authentication is on.',
