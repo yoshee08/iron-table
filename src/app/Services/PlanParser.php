@@ -155,7 +155,7 @@ class PlanParser
 
                 if ($best[$b] !== null
                     && $this->follows($candidates[$a]['key'], $candidates[$b]['key'])
-                    && ($best[$a] === null || $best[$b] + $weights[$a] > $best[$a])) {
+                    && ($best[$a] === null || $best[$a] < $best[$b] + $weights[$a])) {
                     $best[$a] = $best[$b] + $weights[$a];
                     $previous[$a] = $b;
                 }
