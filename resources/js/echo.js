@@ -1,14 +1,29 @@
-import Echo from 'laravel-echo';
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// Live updates (Laravel Echo + Reverb).
+// The settings come from the page at run time, not from the build, so one image
+// works for any host name (docs/development.md, K1):
+//   - key:  <meta name="reverb-key"> (resources/views/partials/reverb-meta.blade.php)
+//   - host, port, TLS: the same as the page. docker/Caddyfile forwards /app/* to Reverb.
 
+import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+
 window.Pusher = Pusher;
 
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-});
+const key = document.querySelector('meta[name="reverb-key"]')?.content;
+
+if (key) {
+    const secure = window.location.protocol === 'https:';
+    const port = Number(window.location.port) || (secure ? 443 : 80);
+
+    window.Echo = new Echo({
+        broadcaster: 'reverb',
+        key,
+        wsHost: window.location.hostname,
+        wsPort: port,
+        wssPort: port,
+        forceTLS: secure,
+        enabledTransports: ['ws', 'wss'],
+    });
+}

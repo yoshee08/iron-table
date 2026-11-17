@@ -15,6 +15,7 @@ x-app-image: &app-image
   build:
     context: .
     dockerfile: docker/Dockerfile
+    target: runtime
   env_file: .env
   restart: unless-stopped
   volumes:
@@ -43,8 +44,8 @@ services:
     command: ["reverb"]
     environment:
       REVERB_SERVER_PORT: "8080"
-    ports:
-      - "${APP_BIND:-127.0.0.1}:${REVERB_PUBLIC_PORT:-8081}:8080"
+    # No public port. Browsers reach Reverb through the app port: docker/Caddyfile
+    # forwards /app/* to this service.
     depends_on:
       app:
         condition: service_healthy
@@ -72,14 +73,16 @@ services:
         condition: service_healthy
 
   db:
-    image: pgvector/pgvector:0.8.7-pg16
+    image: pgvector/pgvector:0.8.7-pg18
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_DATABASE:-iron_table}
       POSTGRES_USER: ${DB_USERNAME:-iron_table}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # PostgreSQL 18+ keeps data under /var/lib/postgresql/18/docker and
+      # refuses to start with a volume at the old path /var/lib/postgresql/data.
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
