@@ -88,7 +88,7 @@ services:
       - no-new-privileges:true
 
   redis:
-    image: redis:7.4-alpine
+    image: redis:8.10-alpine
     profiles: ["redis"]
     restart: unless-stopped
     command: ["redis-server", "--save", "", "--appendonly", "no"]
