@@ -18,11 +18,11 @@ blocking="$(comm -23 <(printf '%s\n' "$found" | grep -v '^$') <(printf '%s\n' "$
 
 if [ -n "$allowed" ]; then
     echo "Allowed by $allowlist:"
-    sed 's/^/  /' <<<"$allowed"
+    while read -r id; do echo "  $id"; done <<<"$allowed"
 fi
 if [ -n "$blocking" ]; then
     echo "High or critical advisories:"
-    sed 's/^/  /' <<<"$blocking"
+    while read -r id; do echo "  $id"; done <<<"$blocking"
     exit 1
 fi
 echo "OK: no blocking advisories"
