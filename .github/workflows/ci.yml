@@ -48,8 +48,8 @@ jobs:
       - name: Composer advisories
         run: docker run --rm -v "$PWD:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
 
-      - name: npm advisories (high and critical)
-        run: npm audit --package-lock-only --audit-level=high
+      - name: npm advisories (high and critical, reviewed exceptions allowed)
+        run: ./scripts/ci/npm-audit.sh
 
   test:
     needs: validate

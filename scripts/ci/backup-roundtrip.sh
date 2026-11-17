@@ -11,8 +11,8 @@ cd "$(dirname "$0")/../.."
 marker=/app/storage/app/private/ci-marker.txt
 
 docker compose exec -T app sh -c "echo ci-marker > $marker"
-./scripts/backup.sh
-backup="$(ls -1 backups/iron-table-*.tar | tail -n 1)"
+backup="$(./scripts/backup.sh | sed -n 's/^OK: //p')"
+[ -f "$backup" ]
 
 psql_db "DELETE FROM users" >/dev/null
 docker compose exec -T app rm "$marker"
