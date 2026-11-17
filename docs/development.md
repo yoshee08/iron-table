@@ -20,14 +20,14 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | `docker/Caddyfile` | Web server: the PHP app and the live-update path `/app/*` on one port |
 | `docker/php/iron-table.ini` | PHP settings for production |
 | `.env.example` | All settings, with comments. Copy it to `.env`. |
-| `scripts/setup.sh` | Makes `.env` with random secrets (first start) |
+| `scripts/setup.sh`, `scripts/setup.ps1` | Makes `.env` with random secrets (first start). `setup.ps1` is for Windows (PowerShell). |
 | `scripts/backup.sh`, `scripts/restore.sh` | Back up and restore the database and uploaded files |
 | `.github/` | CI workflows, CI check scripts (`.github/ci/`), Dependabot, security policy |
 | `docs/` | Design specification and guides |
 
 ## 3. First start
 
-1. Run `./scripts/setup.sh`. It makes `.env` with new random secrets. It does not change an `.env` that exists.
+1. Run `./scripts/setup.sh`. On Windows, run `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`. It makes `.env` with new random secrets. It does not change an `.env` that exists.
 2. Optional: change other settings in `.env`, for example `APP_URL`.
 3. Start the services: `docker compose up -d`. The first start builds the image.
 4. Wait until all services show `healthy`: `docker compose ps`.
