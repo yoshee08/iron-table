@@ -4,6 +4,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
@@ -15,8 +16,7 @@ use Illuminate\Support\Facades\Validator;
  * - No settings in .env:    do nothing (exit 0).
  * - Settings not valid:     stop with an error (exit 1), so the problem is seen.
  *
- * Note: roles do not exist yet (spec section 10, "memberships"). This account
- * gets the administrator role when the role tables are added.
+ * The account gets the Administrator role.
  */
 class CreateFirstAdmin extends Command
 {
@@ -54,10 +54,11 @@ class CreateFirstAdmin extends Command
             return self::FAILURE;
         }
 
-        User::query()->create([
+        User::query()->forceCreate([
             'name' => $settings['name'],
             'email' => $settings['email'],
             'password' => $settings['password'],
+            'role' => Role::Admin,
         ]);
 
         $this->info('First administrator created: '.$settings['email']);

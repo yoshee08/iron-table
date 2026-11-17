@@ -66,7 +66,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - `scripts/setup.sh` writes `INITIAL_ADMIN_EMAIL` and a random `INITIAL_ADMIN_PASSWORD` to `.env`.
 - On the first start, the app container makes this account. It does this only when no user exists.
 - After the first login, remove `INITIAL_ADMIN_PASSWORD` from `.env`.
-- Note: the login screen does not exist yet. Roles do not exist yet (spec section 10).
+- The account has the Administrator role. Log in at `APP_URL/login`, then turn on two-factor authentication in **Account**.
 
 ## 8. Security defaults
 
