@@ -115,7 +115,7 @@ jobs:
           cache-to: type=gha,scope=test,mode=max
 
       - name: Check the PHP code style (Laravel Pint)
-        run: docker run --rm iron-table:test vendor/bin/pint --test
+        run: docker run --rm iron-table:test vendor/bin/pint --test -v
 
       - name: Run the PHP tests against PostgreSQL 18
         # These values replace the SQLite defaults in src/phpunit.xml.

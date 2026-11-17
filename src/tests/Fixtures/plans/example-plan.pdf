@@ -1,0 +1,70 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Length 1170 >>
+stream
+BT /F1 9 Tf 11 TL 40 800 Td
+(Example Corp Incident Response Plan) Tj T*
+() Tj T*
+(Fictional sample plan for tests. It is not a real organization.) Tj T*
+() Tj T*
+(Table of Contents) Tj T*
+(1. Purpose ................................ 1) Tj T*
+(2. Scope .................................. 1) Tj T*
+(3. Reporting a Suspected Incident ......... 2) Tj T*
+(4. Severity Levels ........................ 2) Tj T*
+() Tj T*
+(1. Purpose) Tj T*
+() Tj T*
+(This plan tells employees how to report and handle security incidents.) Tj T*
+() Tj T*
+(2. Scope) Tj T*
+() Tj T*
+(The plan applies to all employees and contractors.) Tj T*
+() Tj T*
+(2.1 Locations) Tj T*
+() Tj T*
+(Main office and remote work locations.) Tj T*
+() Tj T*
+(3. Reporting a Suspected Incident) Tj T*
+() Tj T*
+(Send an email to the security mailbox with this information:) Tj T*
+() Tj T*
+(1. Name of the person who reports the incident) Tj T*
+(2. Contact information) Tj T*
+(3. Description of the incident) Tj T*
+() Tj T*
+(4. Severity Levels) Tj T*
+() Tj T*
+(The incident response team assigns a severity level.) Tj T*
+() Tj T*
+(4.1 Severity Table) Tj T*
+() Tj T*
+(Low: 30 days. Medium: 14 days. High: 7 days.) Tj T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000338 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1560
+%%EOF

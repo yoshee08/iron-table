@@ -70,6 +70,13 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - Administrators and moderators must turn on two-factor authentication. Until they do, the application shows only the **Account** page.
 - To add a user, open **Users**, type the name, email and role, and select **Add the user**. Give the setup link to the user. The link lets the user choose a password and works for 60 minutes. To make a new link, select **New setup link**.
 
+### IR plan
+
+- Moderators and administrators upload the IR plan in **IR plan** > **Upload a plan** (PDF with selectable text, DOCX or Markdown; 20 MB maximum).
+- IRon Table splits the plan into numbered sections. Check the sections and correct the ones that are wrong.
+- Every logged-in user can read and search the plan. Each upload is a new version.
+- A scanned PDF (images only, no text) cannot be read. Export the plan from the original document instead.
+
 ## 8. Security defaults
 
 - The ports listen on `127.0.0.1` only. Set `APP_BIND` to change this.
