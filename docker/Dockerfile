@@ -13,7 +13,7 @@
 # ---------------------------------------------------------------------------
 # PHP dependencies, production (no dev packages)
 # ---------------------------------------------------------------------------
-FROM composer:2.8.12 AS vendor
+FROM composer:2.11.1 AS vendor
 WORKDIR /app
 COPY src/composer.json src/composer.lock ./
 # The composer image does not have the runtime PHP extensions (pdo_pgsql,
@@ -35,7 +35,7 @@ RUN composer dump-autoload \
 # ---------------------------------------------------------------------------
 # PHP dependencies, with dev packages (test target only)
 # ---------------------------------------------------------------------------
-FROM composer:2.8.12 AS vendor-dev
+FROM composer:2.11.1 AS vendor-dev
 WORKDIR /app
 COPY src/composer.json src/composer.lock ./
 RUN composer install \
