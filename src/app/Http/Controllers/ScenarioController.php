@@ -74,7 +74,8 @@ class ScenarioController
     {
         $request->validate(['source' => ['required', 'string', 'max:1048576']]);
 
-        return $this->save($request, $scenario, (string) $request->input('source'), 'source', $checker);
+        // Browsers send CRLF line ends from a textarea.
+        return $this->save($request, $scenario, str_replace("\r\n", "\n", (string) $request->input('source')), 'source', $checker);
     }
 
     public function download(Scenario $scenario): Response

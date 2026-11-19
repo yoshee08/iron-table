@@ -131,6 +131,10 @@ class ScenarioTest extends TestCase
         $download->assertOk()->assertDownload('phish-to-mailbox-rule-1.0.0.yaml');
         $this->assertSame($changed, $download->getContent());
 
+        // A browser sends CRLF line ends. The stored text keeps LF and the last newline.
+        $this->actingAs($this->moderator)->put("/scenarios/{$scenario->id}", ['source' => str_replace("\n", "\r\n", $changed)]);
+        $this->assertSame($changed, $scenario->fresh()->source);
+
         $this->actingAs($this->moderator)->get('/scenarios/example')->assertOk()->assertDownload('phish-to-mailbox-rule.yaml');
 
         $this->actingAs($this->moderator)->delete("/scenarios/{$scenario->id}")->assertRedirect('/scenarios');

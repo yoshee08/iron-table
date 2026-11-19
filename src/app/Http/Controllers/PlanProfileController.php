@@ -48,6 +48,7 @@ class PlanProfileController
     public function update(Request $request, IrPlan $plan): RedirectResponse
     {
         $profile = (string) ($request->validate(['profile' => ['nullable', 'string', 'max:65535']])['profile'] ?? '');
+        $profile = str_replace("\r\n", "\n", $profile);
 
         try {
             $data = Yaml::parse($profile);
