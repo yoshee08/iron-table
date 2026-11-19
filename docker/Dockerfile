@@ -8,15 +8,14 @@
 #   runtime  the production image (default, last stage)   docker compose build
 #   test     runtime base + dev packages, for CI tests      docker build --target test
 #
-# Image versions are pinned in the FROM lines. Change them together with
-# scripts/bootstrap-laravel.sh (COMPOSER_IMAGE, NODE_IMAGE).
+# Image versions are pinned in the FROM lines.
 
 # ---------------------------------------------------------------------------
 # PHP dependencies, production (no dev packages)
 # ---------------------------------------------------------------------------
 FROM composer:2.8.12 AS vendor
 WORKDIR /app
-COPY composer.json composer.lock ./
+COPY src/composer.json src/composer.lock ./
 # The composer image does not have the runtime PHP extensions (pdo_pgsql,
 # pcntl, ...). The base stage has them, so platform checks are skipped here.
 RUN composer install \
@@ -26,7 +25,7 @@ RUN composer install \
         --no-interaction \
         --prefer-dist \
         --ignore-platform-reqs
-COPY . .
+COPY src/ .
 RUN composer dump-autoload \
         --no-dev \
         --no-scripts \
@@ -38,14 +37,14 @@ RUN composer dump-autoload \
 # ---------------------------------------------------------------------------
 FROM composer:2.8.12 AS vendor-dev
 WORKDIR /app
-COPY composer.json composer.lock ./
+COPY src/composer.json src/composer.lock ./
 RUN composer install \
         --no-scripts \
         --no-autoloader \
         --no-interaction \
         --prefer-dist \
         --ignore-platform-reqs
-COPY . .
+COPY src/ .
 RUN composer dump-autoload --no-scripts --optimize
 
 # ---------------------------------------------------------------------------
@@ -53,22 +52,21 @@ RUN composer dump-autoload --no-scripts --optimize
 # ---------------------------------------------------------------------------
 FROM node:22.22-alpine AS assets
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY src/package.json src/package-lock.json ./
 RUN npm ci --no-audit --no-fund
-COPY . .
-# Tailwind scans some Blade views inside vendor/.
-COPY --from=vendor /app/vendor ./vendor
+COPY src/ .
 RUN npm run build
 
 # ---------------------------------------------------------------------------
 # Base: FrankenPHP, PHP extensions and settings (shared by test and runtime)
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS base
+FROM dunglas/frankenphp:1.13.5-php8.4-bookworm AS base
 
-# 1. Apply the Debian security updates that are newer than the base image.
-#    The CI image scan fails on fixable critical findings, so rebuild often.
-# 2. curl is for the container health checks. The base image tag pins the
-#    Debian release, so the curl package version is not pinned here.
+# Debian security updates (CI fails on fixable critical findings) and curl for
+# health checks. The base image tag pins the Debian release.
+# A new SECURITY_UPDATES value rebuilds this layer. CI sets the ISO week, so a
+# cached build still gets fresh security updates every week.
+ARG SECURITY_UPDATES=manual
 # hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
@@ -85,12 +83,10 @@ WORKDIR /app
 # ---------------------------------------------------------------------------
 FROM base AS test
 COPY --from=vendor-dev /app/vendor ./vendor
-COPY . .
+COPY src/ .
 COPY --from=assets /app/public/build ./public/build
-# Laravel reads /app/.env at boot. A missing file is normal (settings come from
-# the environment), but PHPUnit reports the silenced read as a warning, and
-# phpunit.xml fails on warnings. An empty .env stops that. Environment values
-# still win: the .env loader never replaces a value that is already set.
+# Empty .env: PHPUnit reports Laravel's silenced read of a missing .env as a
+# warning. Environment variables still win over the file.
 RUN php artisan package:discover --ansi \
     && touch .env
 CMD ["php", "artisan", "test"]
@@ -104,14 +100,13 @@ ARG APP_UID=10001
 ARG APP_GID=10001
 
 COPY --from=vendor /app/vendor ./vendor
-COPY . .
+COPY src/ .
 COPY --from=assets /app/public/build ./public/build
 COPY docker/entrypoint.sh /usr/local/bin/iron-table-entrypoint
 COPY docker/Caddyfile /etc/iron-table/Caddyfile
 
-# 1. Composer scripts were skipped in stage "vendor", so build the package manifest.
-# 2. Make the non-root user. Only storage/, bootstrap/cache/ and the Caddy
-#    data and config folders are writable by it.
+# Package manifest (Composer scripts were skipped), then the non-root user.
+# It can write only storage/, bootstrap/cache/ and the Caddy folders.
 RUN php artisan package:discover --ansi \
     && groupadd --gid "${APP_GID}" app \
     && useradd --uid "${APP_UID}" --gid app --no-create-home --shell /usr/sbin/nologin app \
@@ -122,13 +117,11 @@ RUN php artisan package:discover --ansi \
 
 USER app
 
-# Port 8080 so that the non-root user can bind it. TLS is set at the
-# reverse proxy (see docs/development.md, K2).
+# 8080: a non-root user can bind it. TLS is at a reverse proxy.
 EXPOSE 8080
 
-# The base image checks the Caddy admin port (2019). The admin port is off
-# (docker/Caddyfile), and only the "app" role runs Caddy. Each role sets its
-# own health check in compose.yaml.
+# The base image's check needs the Caddy admin port, which is off. Each role
+# has its own health check in compose.yaml.
 HEALTHCHECK NONE
 
 ENTRYPOINT ["iron-table-entrypoint"]

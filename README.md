@@ -21,6 +21,8 @@ The first start takes a few minutes. Later starts take seconds.
 
 `setup.sh` shows the first administrator email and password. Save them.
 
+**Windows:** run the commands in PowerShell, with `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1` instead of `./scripts/setup.sh`.
+
 ## Stop
 
 ```sh

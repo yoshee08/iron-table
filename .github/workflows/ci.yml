@@ -3,9 +3,8 @@
 # Checks every push to main and every pull request.
 #   validate  shell scripts, Dockerfile, Compose file
 #   security  Composer and npm advisories (spec SEC-13)
-#   test      PHP tests (php artisan test) against PostgreSQL 18
-#   build     production image: start all services, /up, live-update path,
-#             image vulnerability scan (spec SEC-13)
+#   test      PHP code style (Pint) and PHP tests against PostgreSQL 18
+#   build     production image: start all services, then .github/ci/*.sh
 #
 # Actions are pinned to full commit SHAs. Dependabot updates them.
 
@@ -27,10 +26,10 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check shell scripts
-        run: shellcheck docker/entrypoint.sh scripts/*.sh
+        run: shellcheck docker/entrypoint.sh scripts/*.sh .github/ci/*.sh
 
       - name: Check Dockerfile
         run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
@@ -41,16 +40,40 @@ jobs:
           docker compose config -q
           docker compose --profile redis --profile ai config -q
 
+  windows-setup:
+    # scripts/setup.ps1 on real Windows with Windows PowerShell 5.1 (what users have).
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run scripts/setup.ps1
+        shell: cmd
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup.ps1
+
+      - name: Check the .env file
+        shell: powershell
+        run: |
+          $env_ = [IO.File]::ReadAllText("$PWD\.env")
+          if ($env_.Contains("`r")) { throw '.env has CRLF line endings' }
+          foreach ($pattern in '(?m)^APP_KEY=base64:.{44}$', '(?m)^DB_PASSWORD=[0-9a-f]{48}$',
+                   '(?m)^REVERB_APP_ID=[1-9][0-9]{5}$', '(?m)^REVERB_APP_KEY=[0-9a-f]{32}$',
+                   '(?m)^INITIAL_ADMIN_PASSWORD=[0-9a-f]{24}$') {
+              if ($env_ -notmatch $pattern) { throw "Missing or wrong: $pattern" }
+          }
+          $second = powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup.ps1 | Out-String
+          if ($second -notmatch 'already exists') { throw "Second run did not stop: $second" }
+          Write-Output 'OK'
+
   security:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Composer advisories
-        run: docker run --rm -v "$PWD:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
+        run: docker run --rm -v "$PWD/src:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
 
-      - name: npm advisories (high and critical)
-        run: npm audit --package-lock-only --audit-level=high
+      - name: npm advisories (high and critical, reviewed exceptions allowed)
+        run: ./.github/ci/npm-audit.sh
 
   test:
     needs: validate
@@ -71,13 +94,31 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Build the test image
-        run: docker build --target test -t iron-table:test -f docker/Dockerfile .
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Get the week for the security-update layer
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Build the test image (cached layers)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: test
+          tags: iron-table:test
+          load: true
+          build-args: SECURITY_UPDATES=${{ steps.week.outputs.week }}
+          cache-from: type=gha,scope=test
+          cache-to: type=gha,scope=test,mode=max
+
+      - name: Check the PHP code style (Laravel Pint)
+        run: docker run --rm iron-table:test vendor/bin/pint --test -v
 
       - name: Run the PHP tests against PostgreSQL 18
-        # These values replace the SQLite defaults in phpunit.xml.
+        # These values replace the SQLite defaults in src/phpunit.xml.
         run: |
           docker run --rm --network host \
             -e APP_KEY="base64:$(openssl rand -base64 32)" \
@@ -90,69 +131,41 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Make a test .env
         # The same script that users run (README "Start"), so CI tests it too.
         run: ./scripts/setup.sh
 
-      - name: Build and start all services
-        run: docker compose up -d --build --wait --wait-timeout 300
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Check the health endpoint
-        run: |
-          curl -fsS http://127.0.0.1:8080/up
-          docker compose ps
+      - name: Get the week for the security-update layer
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
-      - name: Check the live-update path (WebSocket through the app port)
-        run: |
-          key="$(grep '^REVERB_APP_KEY=' .env | cut -d= -f2)"
-          # A working path answers "101 Switching Protocols" and stays open,
-          # so curl stops at --max-time. Only the HTTP status is checked.
-          code="$(curl -s -o /dev/null -w '%{http_code}' --http1.1 --max-time 5 \
-            -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
-            -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: SXJvblRhYmxlQ0lUZXN0IQ==' \
-            "http://127.0.0.1:8080/app/${key}?protocol=7&client=js&version=8.4.0" || true)"
-          echo "HTTP status: ${code}"
-          test "${code}" = "101"
+      - name: Build the production image (cached layers)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: runtime
+          tags: iron-table:local
+          load: true
+          build-args: SECURITY_UPDATES=${{ steps.week.outputs.week }}
+          cache-from: type=gha,scope=runtime
+          cache-to: type=gha,scope=runtime,mode=max
 
-      - name: Check the first administrator
-        run: |
-          email="$(grep '^INITIAL_ADMIN_EMAIL=' .env | cut -d= -f2)"
-          # shellcheck disable=SC2016
-          count="$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT count(*) FROM users"')"
-          echo "users: ${count}"
-          test "${count}" = "1"
-          docker compose logs app | grep -F "First administrator created: ${email}"
+      - name: Start all services
+        run: docker compose up -d --wait --wait-timeout 300
+
+      - name: Check the running stack (health, live updates, first administrator)
+        run: ./.github/ci/check-stack.sh
 
       - name: Backup and restore round trip
-        run: |
-          psql_db() { docker compose exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -tAc \"$1\""; }
-          # A marker file in the storage volume.
-          docker compose exec -T app sh -c 'echo ci-marker > /app/storage/app/private/ci-marker.txt'
-          ./scripts/backup.sh
-          backup="$(ls -1 backups/iron-table-*.tar | tail -n 1)"
-          # Damage the data.
-          psql_db "DELETE FROM users"
-          docker compose exec -T app rm /app/storage/app/private/ci-marker.txt
-          test "$(psql_db 'SELECT count(*) FROM users')" = "0"
-          # Restore and check.
-          ./scripts/restore.sh --yes "${backup}"
-          test "$(psql_db 'SELECT count(*) FROM users')" = "1"
-          test "$(docker compose exec -T app cat /app/storage/app/private/ci-marker.txt)" = "ci-marker"
-          curl -fsS http://127.0.0.1:8080/up
+        run: ./.github/ci/backup-roundtrip.sh
 
-      - name: Scan the image (fail on fixable critical findings)
-        run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 \
-            image --scanners vuln --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
-            iron-table:local
-
-      - name: Report high findings (does not fail)
-        run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.76.1 \
-            image --scanners vuln --severity HIGH --ignore-unfixed --exit-code 0 --no-progress \
-            iron-table:local
+      - name: Scan the image (report HIGH, fail on fixable CRITICAL)
+        run: ./.github/ci/scan-image.sh iron-table:local
 
       - name: Show logs after a failure
         if: failure()

@@ -12,13 +12,13 @@
 *SKILL.md
 .claude/settings.local.json
 
-# --- Laravel / PHP (added now so the scaffold starts clean) ---
-/vendor/
-/node_modules/
-/public/build/
-/public/hot
-/storage/*.key
-/bootstrap/cache/*.php
+# --- Laravel app (src/) ---
+/src/vendor/
+/src/node_modules/
+/src/public/build/
+/src/public/hot
+/src/storage/*.key
+/src/bootstrap/cache/*.php
 .phpunit.result.cache
 
 # --- Docker volumes and backups ---
