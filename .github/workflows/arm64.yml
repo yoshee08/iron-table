@@ -2,19 +2,16 @@
 #
 # Builds the production image for linux/arm64 (spec 11.3, item 3) with QEMU
 # emulation, then checks PHP and the extensions in that image.
-# Emulation is slow, so this runs only when the image inputs change, on main,
-# weekly, and by hand.
+# Emulation is slow, so this runs only when docker/ changes in a pull request,
+# weekly (this also refreshes the cache for main), and by hand. Cached layers
+# make repeat builds fast.
 
 name: arm64 build
 
 on:
-  push:
-    branches: [main]
   pull_request:
     paths:
       - docker/**
-      - composer.lock
-      - package-lock.json
       - .github/workflows/arm64.yml
   schedule:
     - cron: "0 5 * * 1"
@@ -32,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
@@ -41,10 +38,22 @@ jobs:
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Build the runtime image for linux/arm64
-        run: |
-          docker buildx build --platform linux/arm64 --target runtime \
-            -f docker/Dockerfile -t iron-table:arm64 --load .
+      - name: Get the week for the security-update layer
+        id: week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Build the runtime image for linux/arm64 (cached layers)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: runtime
+          platforms: linux/arm64
+          tags: iron-table:arm64
+          load: true
+          build-args: SECURITY_UPDATES=${{ steps.week.outputs.week }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,scope=arm64,mode=max
 
       - name: Check the arm64 image
         run: |

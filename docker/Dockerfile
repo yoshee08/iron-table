@@ -15,7 +15,7 @@
 # ---------------------------------------------------------------------------
 FROM composer:2.8.12 AS vendor
 WORKDIR /app
-COPY composer.json composer.lock ./
+COPY src/composer.json src/composer.lock ./
 # The composer image does not have the runtime PHP extensions (pdo_pgsql,
 # pcntl, ...). The base stage has them, so platform checks are skipped here.
 RUN composer install \
@@ -25,7 +25,7 @@ RUN composer install \
         --no-interaction \
         --prefer-dist \
         --ignore-platform-reqs
-COPY . .
+COPY src/ .
 RUN composer dump-autoload \
         --no-dev \
         --no-scripts \
@@ -37,14 +37,14 @@ RUN composer dump-autoload \
 # ---------------------------------------------------------------------------
 FROM composer:2.8.12 AS vendor-dev
 WORKDIR /app
-COPY composer.json composer.lock ./
+COPY src/composer.json src/composer.lock ./
 RUN composer install \
         --no-scripts \
         --no-autoloader \
         --no-interaction \
         --prefer-dist \
         --ignore-platform-reqs
-COPY . .
+COPY src/ .
 RUN composer dump-autoload --no-scripts --optimize
 
 # ---------------------------------------------------------------------------
@@ -52,18 +52,21 @@ RUN composer dump-autoload --no-scripts --optimize
 # ---------------------------------------------------------------------------
 FROM node:22.22-alpine AS assets
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY src/package.json src/package-lock.json ./
 RUN npm ci --no-audit --no-fund
-COPY . .
+COPY src/ .
 RUN npm run build
 
 # ---------------------------------------------------------------------------
 # Base: FrankenPHP, PHP extensions and settings (shared by test and runtime)
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:1.13.4-php8.4-bookworm AS base
+FROM dunglas/frankenphp:1.13.5-php8.4-bookworm AS base
 
 # Debian security updates (CI fails on fixable critical findings) and curl for
 # health checks. The base image tag pins the Debian release.
+# A new SECURITY_UPDATES value rebuilds this layer. CI sets the ISO week, so a
+# cached build still gets fresh security updates every week.
+ARG SECURITY_UPDATES=manual
 # hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
@@ -80,7 +83,7 @@ WORKDIR /app
 # ---------------------------------------------------------------------------
 FROM base AS test
 COPY --from=vendor-dev /app/vendor ./vendor
-COPY . .
+COPY src/ .
 COPY --from=assets /app/public/build ./public/build
 # Empty .env: PHPUnit reports Laravel's silenced read of a missing .env as a
 # warning. Environment variables still win over the file.
@@ -97,7 +100,7 @@ ARG APP_UID=10001
 ARG APP_GID=10001
 
 COPY --from=vendor /app/vendor ./vendor
-COPY . .
+COPY src/ .
 COPY --from=assets /app/public/build ./public/build
 COPY docker/entrypoint.sh /usr/local/bin/iron-table-entrypoint
 COPY docker/Caddyfile /etc/iron-table/Caddyfile
