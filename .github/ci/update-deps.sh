@@ -16,7 +16,7 @@ case "${TOOL:?Set TOOL}" in
     composer)
         # The runtime image has the PHP extensions; the composer image may not.
         docker run --rm -u "$user" -e COMPOSER_HOME=/tmp/composer \
-            -v "$PWD/src:/app" -w /app composer:2.8.12 \
+            -v "$PWD/src:/app" -w /app composer:2.11.1 \
             "${args[@]}" --no-interaction --no-scripts --ignore-platform-req='ext-*'
         ;;
     npm)

@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Composer advisories
-        run: docker run --rm -v "$PWD/src:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
+        run: docker run --rm -v "$PWD/src:/app" -w /app composer:2.11.1 audit --locked --abandoned=report --no-interaction
 
       - name: npm advisories (high and critical, reviewed exceptions allowed)
         run: ./.github/ci/npm-audit.sh
