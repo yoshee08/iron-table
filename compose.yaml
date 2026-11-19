@@ -101,7 +101,7 @@ services:
       - no-new-privileges:true
 
   ollama:
-    image: ollama/ollama:0.40.15
+    image: ollama/ollama:0.40.16
     profiles: ["ai"]
     restart: unless-stopped
     volumes:
