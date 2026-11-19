@@ -6,6 +6,8 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ $title }} - {{ config('app.name') }}</title>
+        {{-- Read by Laravel Echo to authorize private live-update channels. --}}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         @include('partials.reverb-meta')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
@@ -14,6 +16,7 @@
             <nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3" aria-label="Main">
                 <a href="{{ route('dashboard') }}" class="font-semibold">{{ config('app.name') }}</a>
                 <a href="{{ route('dashboard') }}" class="text-sm underline-offset-4 hover:underline">Dashboard</a>
+                <a href="{{ route('exercises.index') }}" class="text-sm underline-offset-4 hover:underline">Exercises</a>
                 <a href="{{ route('plans.index') }}" class="text-sm underline-offset-4 hover:underline">IR plan</a>
                 @can('moderate')
                     <a href="{{ route('scenarios.index') }}" class="text-sm underline-offset-4 hover:underline">Scenarios</a>

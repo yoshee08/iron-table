@@ -87,6 +87,17 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - A new plan version keeps the profile and the plan concepts of the version before it.
 - The scenario page shows the consistency check. Correct all errors with **Edit the YAML**. To keep the old version, change `meta.version` and import the file again.
 
+### Exercises
+
+1. Open **Exercises** > **Prepare an exercise**. Select a scenario that passes the consistency check. The exercise keeps a copy of the scenario and of the current IR plan version.
+2. Add the participants. Give each one an exercise role (participant, scribe or observer) and a plan role, for example CISO.
+3. Open **Control**. Select **Start the session**.
+4. Release the injects. The timeline marks the suggested next inject. You can release any inject, for example a branch.
+5. Participants open **Live screen**. They see the injects and the artifacts, and send responses that cite plan sections.
+6. Select **STOP** if a real event needs attention. Select **Resume** to continue, or **End the session**.
+
+Screens update immediately through the live connection. If the connection drops, they update every 30 seconds.
+
 ### AI assistance (optional)
 
 - The AI writes scenario drafts in small steps: the outline and the facts, then one inject text, one artifact or one rubric at a time. Moderators check each step.
