@@ -1,0 +1,127 @@
+{{-- SPDX-License-Identifier: AGPL-3.0-or-later --}}
+{{-- Moderator console (spec section 7.1): all live data on one screen. The part in #live reloads on each change. --}}
+<x-layouts.app :title="'Control: '.$exercise->title">
+    <div id="live" data-live-channel="exercise.{{ $exercise->id }}">
+        <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
+            @include('exercises._status', ['status' => $exercise->status])
+            @include('exercises._clock')
+            <a href="{{ route('exercises.live', $exercise) }}" class="underline underline-offset-4">Live screen</a>
+            <a href="{{ route('exercises.setup', $exercise) }}" class="underline underline-offset-4">Participants ({{ $participants->count() }})</a>
+        </div>
+
+        @if (session('status'))
+            <p role="status" class="mb-4 rounded border border-green-300 bg-green-50 p-3 text-sm dark:border-green-700 dark:bg-green-950">{{ session('status') }}</p>
+        @endif
+        @if ($errors->any())
+            <p role="alert" class="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm dark:border-red-700 dark:bg-red-950">{{ $errors->first() }}</p>
+        @endif
+        @include('exercises._stopped')
+
+        <section aria-label="Session controls" class="mb-6 flex flex-wrap items-end gap-2">
+            @foreach (['start' => ['Start the session', ['prepared']], 'pause' => ['Pause', ['running']], 'resume' => ['Resume', ['paused', 'stopped']], 'end' => ['End the session', ['running', 'paused', 'stopped']]] as $action => [$label, $from])
+                @if (in_array($exercise->status, $from, true))
+                    <form method="POST" action="{{ route('exercises.session', [$exercise, $action]) }}">
+                        @csrf
+                        <x-button>{{ $label }}</x-button>
+                    </form>
+                @endif
+            @endforeach
+            @if (in_array($exercise->status, ['running', 'paused'], true))
+                <form method="POST" action="{{ route('exercises.session', [$exercise, 'stop']) }}">
+                    @csrf
+                    <button type="submit" class="rounded bg-red-700 px-4 py-2 text-sm font-bold text-white hover:bg-red-600">STOP (real-world event)</button>
+                </form>
+            @endif
+            @if ($exercise->status !== 'prepared' && $exercise->status !== 'ended')
+                <form method="POST" action="{{ route('exercises.clock', $exercise) }}" class="flex items-end gap-2">
+                    @csrf
+                    <div>
+                        <label for="sim_day" class="block text-xs">Day</label>
+                        <input id="sim_day" name="sim_day" type="number" min="1" max="30" value="{{ $exercise->sim_day }}" class="w-16 rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
+                    </div>
+                    <div>
+                        <label for="sim_time" class="block text-xs">Simulated time</label>
+                        <input id="sim_time" name="sim_time" type="time" value="{{ $exercise->sim_time }}" class="rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
+                    </div>
+                    <button type="submit" class="rounded border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700">Move the clock forward</button>
+                </form>
+            @endif
+        </section>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="timeline">
+                <h2 id="timeline" class="mb-2 text-lg font-semibold">Timeline</h2>
+                <ol class="space-y-2 text-sm">
+                    @foreach ($injects as $inject)
+                        @php
+                            $isReleased = in_array($inject['id'], $releasedKeys, true);
+                            $isNext = ! $isReleased && in_array($inject['id'], $suggested, true);
+                        @endphp
+                        <li class="rounded border p-3 {{ $isNext ? 'border-blue-500' : 'border-zinc-200 dark:border-zinc-800' }} {{ $isReleased ? 'opacity-70' : '' }}">
+                            <p>
+                                <span class="font-mono text-xs">{{ $inject['id'] }}</span> ·
+                                {{ isset($inject['day']) ? 'day '.$inject['day'].' ' : '' }}{{ $inject['at'] }} ·
+                                <strong>{{ $isReleased ? 'Released' : ($isNext ? 'Suggested next' : 'Not released') }}</strong>
+                            </p>
+                            <p class="font-medium">{{ $inject['title'] }}</p>
+                            @if (! empty($inject['expected_plan']))
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Expected plan: {{ implode(', ', $inject['expected_plan']) }}</p>
+                            @endif
+                            @if (! empty($inject['branches']))
+                                <ul class="text-xs text-zinc-600 dark:text-zinc-400">
+                                    @foreach ($inject['branches'] as $branch)
+                                        <li>If {{ $branch['when'] }} → {{ $branch['goto'] }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                            @if (! empty($exercise->scenario['rubric'][$inject['id']]))
+                                <details class="text-xs">
+                                    <summary class="cursor-pointer">Rubric (moderator only)</summary>
+                                    <ul class="list-disc pl-5">
+                                        @foreach ($exercise->scenario['rubric'][$inject['id']] as $item)
+                                            <li>{{ $item['item'] }} ({{ $item['points'] }})</li>
+                                        @endforeach
+                                    </ul>
+                                </details>
+                            @endif
+                            @if (! $isReleased && $exercise->status === 'running')
+                                <form method="POST" action="{{ route('exercises.release', $exercise) }}" class="mt-2">
+                                    @csrf
+                                    <input type="hidden" name="inject" value="{{ $inject['id'] }}">
+                                    <button type="submit" class="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Release {{ $inject['id'] }}</button>
+                                </form>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+            </section>
+
+            <section aria-labelledby="feed">
+                <h2 id="feed" class="mb-2 text-lg font-semibold">Responses</h2>
+                @forelse ($released as $release)
+                    <div class="mb-4">
+                        <p class="text-sm font-medium">{{ $release->inject_key }}: {{ $release->title }} <span class="text-xs text-zinc-600 dark:text-zinc-400">(released at simulated {{ $release->sim_time }})</span></p>
+                        @forelse ($release->responses as $response)
+                            <div class="mt-2 rounded border border-zinc-200 bg-white p-2 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $response->user?->name ?? 'Deleted user' }}@if ($response->plan_role) ({{ $response->plan_role }})@endif · simulated {{ $response->sim_time }} · real {{ $response->created_at->format('H:i') }}</p>
+                                <p class="whitespace-pre-line">{{ $response->body }}</p>
+                                <p class="text-xs">
+                                    @if ($response->citations->isNotEmpty())
+                                        Cites: {{ $response->citations->map(fn ($section) => trim($section->number.' '.$section->title))->implode('; ') }}
+                                    @endif
+                                    @if ($response->no_coverage)
+                                        <strong>No plan coverage</strong>
+                                    @endif
+                                </p>
+                            </div>
+                        @empty
+                            <p class="text-sm text-zinc-600 dark:text-zinc-400">No responses yet.</p>
+                        @endforelse
+                    </div>
+                @empty
+                    <p class="text-sm">No inject is released yet.</p>
+                @endforelse
+            </section>
+        </div>
+    </div>
+</x-layouts.app>

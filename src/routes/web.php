@@ -4,6 +4,9 @@
 
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AiScenarioController;
+use App\Http\Controllers\ConsoleController;
+use App\Http\Controllers\ExerciseController;
+use App\Http\Controllers\LiveController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
@@ -51,8 +54,25 @@ Route::middleware('auth')->group(function () {
             Route::put('/scenarios/{scenario}', [ScenarioController::class, 'update'])->name('scenarios.update');
             Route::get('/scenarios/{scenario}/download', [ScenarioController::class, 'download'])->name('scenarios.download');
             Route::delete('/scenarios/{scenario}', [ScenarioController::class, 'destroy'])->name('scenarios.destroy');
+
+            // Exercises: preparation and the moderator console (spec sections 4 and 7.1).
+            Route::get('/exercises/create', [ExerciseController::class, 'create'])->name('exercises.create');
+            Route::post('/exercises', [ExerciseController::class, 'store'])->name('exercises.store');
+            Route::get('/exercises/{exercise}/setup', [ExerciseController::class, 'setup'])->name('exercises.setup');
+            Route::post('/exercises/{exercise}/participants', [ExerciseController::class, 'addParticipant'])->name('exercises.participants.store');
+            Route::delete('/exercises/{exercise}/participants/{participant}', [ExerciseController::class, 'removeParticipant'])->scopeBindings()->name('exercises.participants.destroy');
+            Route::delete('/exercises/{exercise}', [ExerciseController::class, 'destroy'])->name('exercises.destroy');
+            Route::get('/exercises/{exercise}/control', [ConsoleController::class, 'show'])->name('exercises.control');
+            Route::post('/exercises/{exercise}/session/{action}', [ConsoleController::class, 'session'])->name('exercises.session');
+            Route::post('/exercises/{exercise}/release', [ConsoleController::class, 'release'])->name('exercises.release');
+            Route::post('/exercises/{exercise}/clock', [ConsoleController::class, 'clock'])->name('exercises.clock');
         });
         Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
+
+        // Exercises: every user sees the exercises that they are in (spec section 7.2).
+        Route::get('/exercises', [ExerciseController::class, 'index'])->name('exercises.index');
+        Route::get('/exercises/{exercise}/live', [LiveController::class, 'show'])->name('exercises.live');
+        Route::post('/exercises/{exercise}/responses', [LiveController::class, 'respond'])->name('exercises.responses.store');
         Route::get('/plans/{plan}/download', [PlanController::class, 'download'])->name('plans.download');
 
         Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {
