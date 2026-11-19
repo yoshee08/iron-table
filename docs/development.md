@@ -20,14 +20,14 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | `docker/Caddyfile` | Web server: the PHP app and the live-update path `/app/*` on one port |
 | `docker/php/iron-table.ini` | PHP settings for production |
 | `.env.example` | All settings, with comments. Copy it to `.env`. |
-| `scripts/setup.sh` | Makes `.env` with random secrets (first start) |
+| `scripts/setup.sh`, `scripts/setup.ps1` | Makes `.env` with random secrets (first start). `setup.ps1` is for Windows (PowerShell). |
 | `scripts/backup.sh`, `scripts/restore.sh` | Back up and restore the database and uploaded files |
 | `.github/` | CI workflows, CI check scripts (`.github/ci/`), Dependabot, security policy |
 | `docs/` | Design specification and guides |
 
 ## 3. First start
 
-1. Run `./scripts/setup.sh`. It makes `.env` with new random secrets. It does not change an `.env` that exists.
+1. Run `./scripts/setup.sh`. On Windows, run `powershell -ExecutionPolicy Bypass -File scripts\setup.ps1`. It makes `.env` with new random secrets. It does not change an `.env` that exists.
 2. Optional: change other settings in `.env`, for example `APP_URL`.
 3. Start the services: `docker compose up -d`. The first start builds the image.
 4. Wait until all services show `healthy`: `docker compose ps`.
@@ -61,12 +61,21 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - `./scripts/restore.sh backups/<file>.tar` replaces all data with the backup. It asks first.
 - A backup does not contain `.env`. Keep a safe copy of `APP_KEY`. The restore needs the same `APP_KEY`.
 
-## 7. First administrator
+## 7. First administrator and users
 
 - `scripts/setup.sh` writes `INITIAL_ADMIN_EMAIL` and a random `INITIAL_ADMIN_PASSWORD` to `.env`.
 - On the first start, the app container makes this account. It does this only when no user exists.
 - After the first login, remove `INITIAL_ADMIN_PASSWORD` from `.env`.
 - The account has the Administrator role. Log in at `APP_URL/login`, then turn on two-factor authentication in **Account**.
+- Administrators and moderators must turn on two-factor authentication. Until they do, the application shows only the **Account** page.
+- To add a user, open **Users**, type the name, email and role, and select **Add the user**. Give the setup link to the user. The link lets the user choose a password and works for 60 minutes. To make a new link, select **New setup link**.
+
+### IR plan
+
+- Moderators and administrators upload the IR plan in **IR plan** > **Upload a plan** (PDF with selectable text, DOCX or Markdown; 20 MB maximum).
+- IRon Table splits the plan into numbered sections. Check the sections and correct the ones that are wrong.
+- Every logged-in user can read and search the plan. Each upload is a new version.
+- A scanned PDF (images only, no text) cannot be read. Export the plan from the original document instead.
 
 ## 8. Security defaults
 
@@ -74,6 +83,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - The containers run as a non-root user (UID 10001) with `no-new-privileges`.
 - `APP_DEBUG` is `false`. Do not set it to `true` on a server that other people can reach.
 - The containers send no telemetry.
+- The web server sends security headers: a Content Security Policy (scripts, styles and data from this server only, no frames), `X-Content-Type-Options`, `X-Frame-Options` and `Referrer-Policy`. CI checks them.
 
 ## 9. Live updates
 

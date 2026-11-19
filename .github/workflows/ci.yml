@@ -26,7 +26,7 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check shell scripts
         run: shellcheck docker/entrypoint.sh scripts/*.sh .github/ci/*.sh
@@ -40,10 +40,34 @@ jobs:
           docker compose config -q
           docker compose --profile redis --profile ai config -q
 
+  windows-setup:
+    # scripts/setup.ps1 on real Windows with Windows PowerShell 5.1 (what users have).
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run scripts/setup.ps1
+        shell: cmd
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup.ps1
+
+      - name: Check the .env file
+        shell: powershell
+        run: |
+          $env_ = [IO.File]::ReadAllText("$PWD\.env")
+          if ($env_.Contains("`r")) { throw '.env has CRLF line endings' }
+          foreach ($pattern in '(?m)^APP_KEY=base64:.{44}$', '(?m)^DB_PASSWORD=[0-9a-f]{48}$',
+                   '(?m)^REVERB_APP_ID=[1-9][0-9]{5}$', '(?m)^REVERB_APP_KEY=[0-9a-f]{32}$',
+                   '(?m)^INITIAL_ADMIN_PASSWORD=[0-9a-f]{24}$') {
+              if ($env_ -notmatch $pattern) { throw "Missing or wrong: $pattern" }
+          }
+          $second = powershell -NoProfile -ExecutionPolicy Bypass -File scripts\setup.ps1 | Out-String
+          if ($second -notmatch 'already exists') { throw "Second run did not stop: $second" }
+          Write-Output 'OK'
+
   security:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Composer advisories
         run: docker run --rm -v "$PWD/src:/app" -w /app composer:2.8.12 audit --locked --abandoned=report --no-interaction
@@ -70,7 +94,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
@@ -91,7 +115,7 @@ jobs:
           cache-to: type=gha,scope=test,mode=max
 
       - name: Check the PHP code style (Laravel Pint)
-        run: docker run --rm iron-table:test vendor/bin/pint --test
+        run: docker run --rm iron-table:test vendor/bin/pint --test -v
 
       - name: Run the PHP tests against PostgreSQL 18
         # These values replace the SQLite defaults in src/phpunit.xml.
@@ -107,7 +131,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Make a test .env
         # The same script that users run (README "Start"), so CI tests it too.
