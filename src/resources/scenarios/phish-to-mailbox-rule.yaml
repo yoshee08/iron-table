@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: CC-BY-4.0
+# IRon Table example scenario. All names, systems and addresses are fictional.
+# Format: docs/design-specification.html, section 6.
+
+meta:
+  id: phish-to-mailbox-rule
+  title: Phishing leads to a malicious mailbox rule
+  version: 1.0.0
+  author: IRon Table project
+  license: CC-BY-4.0
+  duration_minutes: 60
+  difficulty: beginner
+  tags: [T1566, T1114.003, nist:detection, nist:containment]
+
+objectives:
+  - Report a suspected incident through the correct channel.
+  - Assign a severity with the severity table of the plan.
+  - Decide on containment and on external reporting.
+
+# Each fact is written one time only. Injects and artifacts use {{facts.name}}.
+facts:
+  victim_user: Finance analyst
+  victim_mailbox: "{{org.domain.example_user}}"
+  victim_host: FIN-PC07
+  attacker_ip: 203.0.113.45
+  forward_address: billing-update@example.net
+  phish_time: "09:05"
+  signin_time: "09:12"
+  rule_found_time: "10:40"
+  disable_time: "11:15"
+  spread_time: "11:30"
+  cui_question_time: "13:00"
+  cui_involved: unknown
+
+briefing: >
+  It is a normal Tuesday at {{org.name}}. The finance team prepares the
+  month-end reports. Nobody has reported a problem today.
+
+injects:
+  - id: inj-1
+    at: "{{facts.rule_found_time}}"
+    title: The help desk reports a strange mailbox rule
+    audience: [all]
+    body: >
+      The help desk finds a rule on the mailbox of the {{facts.victim_user}}.
+      The rule forwards all mail to an external address.
+    artifacts:
+      - type: ticket
+        title: Help desk ticket
+        content: |
+          Mailbox: {{facts.victim_mailbox}}
+          Computer: {{facts.victim_host}}
+          Rule: forward all messages to {{facts.forward_address}}
+          The user says: "I did not make this rule."
+    expected_plan: [reporting_procedure, severity_table]
+    questions:
+      - Who do you tell first, and how?
+      - What severity do you assign? Use the plan.
+    branches:
+      - when: The team disables the account now
+        goto: inj-2a
+      - when: The team monitors before it acts
+        goto: inj-2b
+
+  - id: inj-2a
+    at: "{{facts.disable_time}}"
+    title: Sign-in logs show a login from another country
+    audience: [all]
+    body: >
+      The account is disabled. The sign-in log shows a login to the mailbox
+      at {{facts.signin_time}}, seven minutes after a phishing email arrived.
+    artifacts:
+      - type: log
+        title: Sign-in log
+        content: |
+          {{facts.phish_time}}  Mail received: "Invoice overdue - action required"
+          {{facts.signin_time}}  Sign-in OK  {{facts.victim_mailbox}}  from {{facts.attacker_ip}}
+    expected_plan: [containment]
+    questions:
+      - What evidence do you keep, and who keeps it?
+    next: inj-3
+
+  - id: inj-2b
+    at: "{{facts.spread_time}}"
+    title: More mail goes to the external address
+    audience: [all]
+    body: >
+      While the team watches, 40 more messages go to {{facts.forward_address}}.
+      Some have attachments from the finance share.
+    expected_plan: [containment]
+    questions:
+      - Is monitoring still the right decision? What does the plan say?
+    next: inj-3
+
+  - id: inj-3
+    at: "{{facts.cui_question_time}}"
+    title: Finance asks if the forwarded mail contained CUI
+    audience: [all]
+    body: >
+      The finance manager asks if the forwarded messages contained Controlled
+      Unclassified Information. The answer today is: {{facts.cui_involved}}.
+    expected_plan: [external_reporting]
+    questions:
+      - Who decides if this is a reportable incident?
+      - Which external reports does the plan require, and by when?
+    end: true
+
+rubric:
+  inj-1:
+    - item: Report sent through {{org.channel.report}}
+      points: 2
+    - item: Severity matches the plan table
+      points: 2
+  inj-3:
+    - item: The team names the person who decides on external reporting
+      points: 2
+    - item: The team states the reporting deadline from the plan
+      points: 2

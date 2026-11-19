@@ -54,17 +54,22 @@ class PlanController
 
         $path = $file->store('plans');
 
-        $plan = DB::transaction(function () use ($request, $data, $file, $path, $sections) {
+        // A new version keeps the organization profile and the plan concepts (by section number) of the version before it.
+        $previous = IrPlan::current();
+        $concepts = $previous?->sections->whereNotNull('number')->whereNotNull('concept')->pluck('concept', 'number')->all() ?? [];
+
+        $plan = DB::transaction(function () use ($request, $data, $file, $path, $sections, $previous, $concepts) {
             $plan = IrPlan::query()->forceCreate([
                 'version' => ((int) IrPlan::query()->max('version')) + 1,
                 'title' => ($data['title'] ?? '') ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'file_name' => $file->getClientOriginalName(),
                 'file_path' => $path,
                 'uploaded_by' => $request->user()->id,
+                'profile' => $previous?->profile,
             ]);
 
             foreach ($sections as $position => $section) {
-                $plan->sections()->forceCreate($section + ['position' => $position]);
+                $plan->sections()->forceCreate($section + ['position' => $position, 'concept' => $concepts[$section['number'] ?? ''] ?? null]);
             }
 
             return $plan;

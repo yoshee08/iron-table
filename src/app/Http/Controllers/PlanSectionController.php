@@ -26,12 +26,14 @@ class PlanSectionController
             'number' => ['nullable', 'string', 'max:20', 'regex:/^\d+(\.\d+)*$/'],
             'title' => ['required', 'string', 'max:255'],
             'body' => ['nullable', 'string'],
+            'concept' => ['nullable', 'string', 'max:50', 'regex:/^[a-z][a-z0-9_]*$/'],
         ]);
 
         $section->update([
             'number' => $data['number'] ?? null,
             'title' => $data['title'],
             'body' => $data['body'] ?? '',
+            'concept' => $data['concept'] ?? null,
         ]);
 
         return redirect()->route('plans.show', $plan)->with('status', 'Section saved.');

@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * One numbered section of an IR plan, for example "5.2 Severity table".
  */
-#[Fillable(['number', 'title', 'body'])]
+#[Fillable(['number', 'title', 'body', 'concept'])]
 #[Hidden(['search'])]
 class PlanSection extends Model
 {

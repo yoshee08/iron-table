@@ -77,6 +77,16 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - Every logged-in user can read and search the plan. Each upload is a new version.
 - A scanned PDF (images only, no text) cannot be read. Export the plan from the original document instead.
 
+### Scenarios
+
+- Only moderators and administrators see scenarios. Participants must not see the injects before the session.
+- A scenario is one YAML file. The format is in the design specification, section 6. The example is `src/resources/scenarios/phish-to-mailbox-rule.yaml` (also in **Scenarios** > **Import a scenario**).
+- Before you check a scenario, prepare the current IR plan:
+  1. Open **IR plan**, then **Organization profile**. Type the values that scenarios use, for example the name of the CISO.
+  2. On each section that a scenario expects, select **Correct this section** and type the plan concept, for example `severity_table`.
+- A new plan version keeps the profile and the plan concepts of the version before it.
+- The scenario page shows the consistency check. Correct all errors with **Edit the YAML**. To keep the old version, change `meta.version` and import the file again.
+
 ## 8. Security defaults
 
 - The ports listen on `127.0.0.1` only. Set `APP_BIND` to change this.
