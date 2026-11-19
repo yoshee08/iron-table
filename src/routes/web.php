@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\AiScenarioController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
@@ -38,6 +39,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/scenarios', [ScenarioController::class, 'index'])->name('scenarios.index');
             Route::get('/scenarios/create', [ScenarioController::class, 'create'])->name('scenarios.create');
             Route::get('/scenarios/example', [ScenarioController::class, 'example'])->name('scenarios.example');
+            // AI drafting (spec section 9): only when AI_ENABLED=true.
+            Route::middleware('can:use-ai')->group(function () {
+                Route::get('/scenarios/draft', [AiScenarioController::class, 'create'])->name('scenarios.draft');
+                Route::post('/scenarios/draft', [AiScenarioController::class, 'store'])->name('scenarios.draft.store');
+                Route::post('/scenarios/{scenario}/ai/{inject}/{step}', [AiScenarioController::class, 'step'])->name('scenarios.ai');
+            });
             Route::post('/scenarios', [ScenarioController::class, 'store'])->name('scenarios.store');
             Route::get('/scenarios/{scenario}', [ScenarioController::class, 'show'])->name('scenarios.show');
             Route::get('/scenarios/{scenario}/edit', [ScenarioController::class, 'edit'])->name('scenarios.edit');

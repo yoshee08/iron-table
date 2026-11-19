@@ -104,6 +104,8 @@ services:
     image: ollama/ollama:0.40.16
     profiles: ["ai"]
     restart: unless-stopped
+    # Keep the local model small (spec section 9.1).
+    mem_limit: ${AI_MEMORY_LIMIT:-2g}
     volumes:
       - ollama:/root/.ollama
     security_opt:

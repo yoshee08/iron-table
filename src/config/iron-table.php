@@ -19,4 +19,18 @@ return [
         'password' => env('INITIAL_ADMIN_PASSWORD'),
     ],
 
+    /*
+     * AI assistance (spec section 9). Off by default. The provider is
+     * ollama (local), anthropic (Claude) or openai_compatible (for example
+     * DeepSeek). An empty model uses the default model of the provider.
+     */
+    'ai' => [
+        'enabled' => (bool) env('AI_ENABLED', false),
+        'provider' => env('AI_PROVIDER', 'ollama'),
+        'base_url' => (string) env('AI_BASE_URL', ''),
+        'api_key' => (string) env('AI_API_KEY', ''),
+        'model' => (string) env('AI_MODEL', ''),
+        'timeout' => (int) env('AI_TIMEOUT', 180),
+    ],
+
 ];

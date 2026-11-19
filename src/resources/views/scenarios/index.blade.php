@@ -4,7 +4,12 @@
         <p role="status" class="mb-4 rounded border border-green-300 bg-green-50 p-3 text-sm dark:border-green-700 dark:bg-green-950">{{ session('status') }}</p>
     @endif
 
-    <p class="mb-6"><a href="{{ route('scenarios.create') }}" class="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900">Import a scenario</a></p>
+    <p class="mb-6 flex flex-wrap gap-3">
+        <a href="{{ route('scenarios.create') }}" class="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900">Import a scenario</a>
+        @can('use-ai')
+            <a href="{{ route('scenarios.draft') }}" class="rounded border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Draft with AI</a>
+        @endcan
+    </p>
 
     @if ($scenarios->isEmpty())
         <p>No scenario is imported yet. Import a scenario YAML file, or start with the <a href="{{ route('scenarios.example') }}" class="underline underline-offset-4">example scenario</a>.</p>

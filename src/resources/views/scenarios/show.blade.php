@@ -13,6 +13,12 @@
     @if (session('status'))
         <p role="status" class="mb-4 rounded border border-green-300 bg-green-50 p-3 text-sm dark:border-green-700 dark:bg-green-950">{{ session('status') }}</p>
     @endif
+    @if (session('ai_error'))
+        <p role="alert" class="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm dark:border-red-700 dark:bg-red-950">{{ session('ai_error') }}</p>
+    @endif
+    @can('use-ai')
+        <p class="mb-4 text-sm text-zinc-600 dark:text-zinc-400">The AI buttons write one part of an inject. They save the YAML again, so comments in the YAML are removed.</p>
+    @endcan
 
     <section aria-labelledby="check" class="mb-8">
         <h2 id="check" class="mb-2 text-lg font-semibold">Consistency check</h2>
@@ -120,6 +126,17 @@
                         @endforeach
                     </ul>
                 @endif
+
+                @can('use-ai')
+                    <div class="mb-2 flex flex-wrap gap-2">
+                        @foreach (['inject' => 'Write the text with AI', 'artifact' => 'Add an artifact with AI', 'rubric' => 'Write the rubric with AI'] as $step => $label)
+                            <form method="POST" action="{{ route('scenarios.ai', [$scenario, $inject['id'], $step]) }}">
+                                @csrf
+                                <button type="submit" class="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">{{ $label }}</button>
+                            </form>
+                        @endforeach
+                    </div>
+                @endcan
 
                 <p class="text-zinc-600 dark:text-zinc-400">
                     @if (! empty($inject['branches']))
