@@ -4,7 +4,9 @@
 
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\PlanController;
+use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
+use App\Http\Controllers\ScenarioController;
 use App\Http\Middleware\RequireTwoFactorForStaff;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +31,19 @@ Route::middleware('auth')->group(function () {
                 Route::put('/plans/{plan}/sections/{section}', [PlanSectionController::class, 'update'])->name('plans.sections.update');
                 Route::delete('/plans/{plan}/sections/{section}', [PlanSectionController::class, 'destroy'])->name('plans.sections.destroy');
             });
+            Route::get('/plans/{plan}/profile', [PlanProfileController::class, 'edit'])->name('plans.profile.edit');
+            Route::put('/plans/{plan}/profile', [PlanProfileController::class, 'update'])->name('plans.profile.update');
+
+            // Scenarios: moderators and administrators only, so that participants do not see the injects first.
+            Route::get('/scenarios', [ScenarioController::class, 'index'])->name('scenarios.index');
+            Route::get('/scenarios/create', [ScenarioController::class, 'create'])->name('scenarios.create');
+            Route::get('/scenarios/example', [ScenarioController::class, 'example'])->name('scenarios.example');
+            Route::post('/scenarios', [ScenarioController::class, 'store'])->name('scenarios.store');
+            Route::get('/scenarios/{scenario}', [ScenarioController::class, 'show'])->name('scenarios.show');
+            Route::get('/scenarios/{scenario}/edit', [ScenarioController::class, 'edit'])->name('scenarios.edit');
+            Route::put('/scenarios/{scenario}', [ScenarioController::class, 'update'])->name('scenarios.update');
+            Route::get('/scenarios/{scenario}/download', [ScenarioController::class, 'download'])->name('scenarios.download');
+            Route::delete('/scenarios/{scenario}', [ScenarioController::class, 'destroy'])->name('scenarios.destroy');
         });
         Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
         Route::get('/plans/{plan}/download', [PlanController::class, 'download'])->name('plans.download');

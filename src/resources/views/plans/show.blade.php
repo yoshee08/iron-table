@@ -4,6 +4,9 @@
         Version {{ $plan->version }}{{ $isCurrent ? ' (current)' : '' }} · {{ $plan->file_name }} ·
         <a href="{{ route('plans.download', $plan) }}" class="underline underline-offset-4">Download the original</a> ·
         <a href="{{ route('plans.index') }}" class="underline underline-offset-4">All versions</a>
+        @can('moderate')
+            · <a href="{{ route('plans.profile.edit', $plan) }}" class="underline underline-offset-4">Organization profile</a>
+        @endcan
     </p>
 
     @if (session('status'))
@@ -24,7 +27,7 @@
         @foreach ($sections as $section)
             <li class="rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
                 <details @if ($terms !== '') open @endif>
-                    <summary class="cursor-pointer px-3 py-2 font-medium">{{ $section->number ? $section->number.' ' : '' }}{{ $section->title }}</summary>
+                    <summary class="cursor-pointer px-3 py-2 font-medium">{{ $section->number ? $section->number.' ' : '' }}{{ $section->title }}@if ($section->concept) <span class="ml-2 rounded bg-zinc-100 px-2 py-0.5 font-mono text-xs dark:bg-zinc-800">{{ $section->concept }}</span>@endif</summary>
                     <div class="border-t border-zinc-200 px-3 py-2 text-sm dark:border-zinc-800">
                         <p class="whitespace-pre-line">{{ $section->body }}</p>
                         @can('moderate')

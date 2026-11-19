@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // YAML text is stored exactly as typed (scenario export without data loss).
+        $middleware->trimStrings(except: ['source', 'profile']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

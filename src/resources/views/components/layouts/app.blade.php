@@ -15,6 +15,9 @@
                 <a href="{{ route('dashboard') }}" class="font-semibold">{{ config('app.name') }}</a>
                 <a href="{{ route('dashboard') }}" class="text-sm underline-offset-4 hover:underline">Dashboard</a>
                 <a href="{{ route('plans.index') }}" class="text-sm underline-offset-4 hover:underline">IR plan</a>
+                @can('moderate')
+                    <a href="{{ route('scenarios.index') }}" class="text-sm underline-offset-4 hover:underline">Scenarios</a>
+                @endcan
                 @can('admin')
                     <a href="{{ route('admin.users.index') }}" class="text-sm underline-offset-4 hover:underline">Users</a>
                 @endcan

@@ -5,6 +5,7 @@
         @method('PUT')
         <x-field name="number" label="Number (for example 5.2; empty if the section has no number)" :value="$section->number" />
         <x-field name="title" label="Title" :value="$section->title" required />
+        <x-field name="concept" label="Plan concept (optional). Scenarios use it to find this section, for example: reporting_procedure, severity_table, containment, external_reporting" :value="$section->concept" />
         <div class="mb-4">
             <label for="body" class="mb-1 block text-sm font-medium">Text</label>
             <textarea id="body" name="body" rows="14" class="w-full rounded border border-zinc-300 bg-white px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-950">{{ old('body', $section->body) }}</textarea>
