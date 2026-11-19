@@ -22,7 +22,9 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --http1.1 --max-time 5 \
 
 echo "3/4 First administrator"
 [ "$(psql_db 'SELECT count(*) FROM users')" = "1" ]
-docker compose logs app | grep -qF "First administrator created: $(env_value INITIAL_ADMIN_EMAIL)"
+# Read all logs first: "grep -q" stops early, and with pipefail the broken pipe fails the step.
+logs="$(docker compose logs app)"
+grep -qF "First administrator created: $(env_value INITIAL_ADMIN_EMAIL)" <<<"$logs"
 
 echo "4/4 Security headers (backlog B2)"
 headers="$(curl -fsS -D - -o /dev/null http://127.0.0.1:8080/login | tr -d '\r')"
