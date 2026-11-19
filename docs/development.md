@@ -87,6 +87,23 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - A new plan version keeps the profile and the plan concepts of the version before it.
 - The scenario page shows the consistency check. Correct all errors with **Edit the YAML**. To keep the old version, change `meta.version` and import the file again.
 
+### AI assistance (optional)
+
+- The AI writes scenario drafts in small steps: the outline and the facts, then one inject text, one artifact or one rubric at a time. Moderators check each step.
+- The application works without AI. AI is off by default.
+- The AI never sees the IR plan or the values of the organization profile.
+
+To use the local AI (nothing leaves the server):
+
+1. In `.env`, set `AI_ENABLED=true` and `AI_PROVIDER=ollama`.
+2. Start with the AI service: `docker compose --profile ai up -d`.
+3. Download the model one time: `docker compose exec ollama ollama pull qwen2.5:1.5b`.
+4. Open **Scenarios** > **Draft with AI**.
+
+To use Claude or DeepSeek, set `AI_PROVIDER`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL` in `.env` (examples are in `.env.example`). Then run `docker compose up -d`. The scenario text goes to that company.
+
+Do not use DeepSeek if your organization handles Controlled Unclassified Information (CUI) or export-controlled data. DeepSeek processes data in China.
+
 ## 8. Security defaults
 
 - The ports listen on `127.0.0.1` only. Set `APP_BIND` to change this.
