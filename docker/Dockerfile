@@ -60,7 +60,7 @@ RUN npm run build
 # ---------------------------------------------------------------------------
 # Base: FrankenPHP, PHP extensions and settings (shared by test and runtime)
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:1.13.5-php8.4-bookworm AS base
+FROM dunglas/frankenphp:1.13.6-php8.4-bookworm AS base
 
 # Debian security updates (CI fails on fixable critical findings) and curl for
 # health checks. The base image tag pins the Debian release.
