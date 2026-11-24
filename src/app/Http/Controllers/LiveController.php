@@ -6,11 +6,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Exercise;
 use App\Models\PlanSection;
+use App\Services\ScenarioChecker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The participant live screen (spec section 7.2). Scribes and observers see
@@ -30,6 +33,18 @@ class LiveController
             'sections' => PlanSection::query()->where('ir_plan_id', $exercise->ir_plan_id)->orderBy('position')->get(),
             'canRespond' => $exercise->acceptsResponsesFrom($request->user()),
         ]);
+    }
+
+    /**
+     * A picture of the exercise (a copy made when the exercise was prepared).
+     */
+    public function image(Request $request, Exercise $exercise, string $name): StreamedResponse
+    {
+        abort_unless($exercise->roleOf($request->user()) !== null || Gate::allows('moderate'), 403);
+        $path = ExerciseController::folder($exercise).'/'.$name;
+        abort_unless(preg_match(ScenarioChecker::IMAGE_NAME, $name) && Storage::exists($path), 404);
+
+        return Storage::response($path);
     }
 
     public function respond(Request $request, Exercise $exercise): RedirectResponse

@@ -195,6 +195,38 @@ class ScenarioDrafter
     }
 
     /**
+     * A picture artifact for one inject: the AI writes the title and the image prompt.
+     * The image provider makes the picture later.
+     *
+     * @param  array<string, mixed>  $scenario
+     * @return array<string, mixed>
+     */
+    public function picture(array $scenario, int $n): array
+    {
+        $inject = $scenario['injects'][$n];
+        $body = $inject['body'] ?? '(no text yet)';
+
+        $answer = $this->ai->json(self::INSTRUCTIONS, <<<TEXT
+            Task: describe one photo that participants see with this inject, for example a door that is open,
+            a USB stick on the ground or a laptop screen from a distance.
+            Facts:
+            {$this->factList($scenario)}
+            Inject: {$inject['title']}
+            Inject text: $body
+            Give a short title and an image prompt of 1 to 3 sentences: the scene, the place, the light and the camera view.
+            The photo must not contain readable text, logos, real brands or recognizable people.
+            TEXT, [
+            'type' => 'object',
+            'properties' => ['title' => ['type' => 'string'], 'prompt' => ['type' => 'string']],
+            'required' => ['title', 'prompt'],
+        ]);
+
+        $scenario['injects'][$n]['artifacts'][] = ['type' => 'image', 'title' => $answer['title'], 'prompt' => $answer['prompt']];
+
+        return $scenario;
+    }
+
+    /**
      * Step 5: the rubric items of one inject.
      *
      * @param  array<string, mixed>  $scenario

@@ -18,6 +18,9 @@ use Symfony\Component\Yaml\Yaml;
  */
 class ScenarioChecker
 {
+    /** The file name of a picture artifact: no folders, only these image types. */
+    public const IMAGE_NAME = '/^[A-Za-z0-9_-]{1,80}\.(png|jpg|jpeg|webp)$/';
+
     private const PLACEHOLDER = '/\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/';
 
     private const TIME = '/^([01]\d|2[0-3]):([0-5]\d)$/';
@@ -103,7 +106,12 @@ class ScenarioChecker
             $this->optionalTextList($inject, 'audience', $where);
             $this->optionalTextList($inject, 'questions', $where);
             $this->optionalTextList($inject, 'expected_plan', $where);
-            $this->optionalBlocks($inject, 'artifacts', $where, ['type', 'title', 'content'], []);
+            $this->optionalBlocks($inject, 'artifacts', $where, ['type', 'title', 'content', 'prompt', 'image'], []);
+            foreach ($inject['artifacts'] ?? [] as $a => $artifact) {
+                if (isset($artifact['image']) && ! preg_match(self::IMAGE_NAME, (string) $artifact['image'])) {
+                    $this->fail("$where, artifacts item ".($a + 1).': image must be a file name such as door.png (letters, digits, - and _; png, jpg or webp).');
+                }
+            }
             $this->optionalBlocks($inject, 'branches', $where, ['when', 'goto'], ['when', 'goto']);
             if (isset($inject['day']) && (! is_int($inject['day']) || $inject['day'] < 1)) {
                 $this->fail("$where: day must be a whole number, 1 or more.");
@@ -184,6 +192,37 @@ class ScenarioChecker
         }
 
         return ['errors' => $this->errors, 'facts' => $factValues, 'scenario' => $scenario];
+    }
+
+    /**
+     * The scenario as YAML again, after the application changed it (an AI step or a picture).
+     * Comments in the old YAML are lost.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function dump(array $data): string
+    {
+        return Yaml::dump($data, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+    }
+
+    /**
+     * The picture file names that the artifacts of a scenario use.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    public static function images(array $data): array
+    {
+        $names = [];
+        foreach ($data['injects'] ?? [] as $inject) {
+            foreach ($inject['artifacts'] ?? [] as $artifact) {
+                if (isset($artifact['image'])) {
+                    $names[] = (string) $artifact['image'];
+                }
+            }
+        }
+
+        return array_values(array_unique($names));
     }
 
     /**
@@ -275,6 +314,13 @@ class ScenarioChecker
             $texts = ['text' => $inject['body'] ?? ''];
             foreach ($inject['artifacts'] ?? [] as $n => $artifact) {
                 $label = 'artifact '.($n + 1);
+                if (($artifact['type'] ?? null) === 'image') {
+                    if (! isset($artifact['image'])) {
+                        $this->errors[] = "Inject {$inject['id']}, $label is a picture without an image. Generate the picture or upload one.";
+                    }
+
+                    continue;
+                }
                 if (! is_string($artifact['content'] ?? null) || trim($artifact['content']) === '') {
                     $this->errors[] = "Inject {$inject['id']}, $label has no content. Put the artifact text in content: one YAML file holds the whole scenario.";
                 }

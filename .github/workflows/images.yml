@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Local AI pictures, end to end: build the image server, download the models,
+# make one picture. Slow (CPU), so it runs by hand and weekly, not on each PR.
+
+name: Images
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - compose.yaml
+      - .github/workflows/images.yml
+      - .github/ci/check-images.sh
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  picture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build, download the models and make one picture
+        run: ./.github/ci/check-images.sh
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: success()
+        with:
+          name: test-picture
+          path: /tmp/picture.png
+
+      - name: Show logs after a failure
+        if: failure()
+        run: docker compose --profile images logs --no-color images images-models

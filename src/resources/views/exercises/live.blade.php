@@ -34,7 +34,7 @@
                         <p class="mb-3 whitespace-pre-line">{{ $release->body }}</p>
                     @endif
                     @foreach ($release->artifacts as $n => $artifact)
-                        <x-artifact :artifact="$artifact" :id="'artifact-'.$release->id.'-'.$n" />
+                        <x-artifact :artifact="$artifact" :id="'artifact-'.$release->id.'-'.$n" :url="isset($artifact['image']) ? route('exercises.image', [$exercise, $artifact['image']]) : null" />
                     @endforeach
                     @if ($release->questions !== [])
                         <ul class="mb-3 list-disc pl-5 text-sm">

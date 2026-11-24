@@ -38,7 +38,7 @@ jobs:
         run: |
           ./scripts/setup.sh
           docker compose config -q
-          docker compose --profile redis --profile ai config -q
+          docker compose --profile redis --profile ai --profile images config -q
 
   windows-setup:
     # scripts/setup.ps1 on real Windows with Windows PowerShell 5.1 (what users have).

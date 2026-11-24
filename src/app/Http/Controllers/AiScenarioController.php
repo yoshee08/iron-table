@@ -6,14 +6,15 @@ namespace App\Http\Controllers;
 
 use App\Models\IrPlan;
 use App\Models\Scenario;
+use App\Models\ScenarioImage;
 use App\Services\Ai\AiException;
 use App\Services\Ai\Provider;
 use App\Services\Ai\ScenarioDrafter;
 use App\Services\ScenarioChecker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * AI drafting of scenarios, one small step at a time (spec section 9.2).
@@ -22,7 +23,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 class AiScenarioController
 {
-    private const STEPS = ['inject', 'artifact', 'rubric'];
+    private const STEPS = ['inject', 'artifact', 'picture', 'rubric'];
 
     public function create(Provider $ai): View
     {
@@ -63,7 +64,7 @@ class AiScenarioController
             ->with('status', 'The AI wrote the outline and the facts. Check them. Then write each inject with the AI buttons or by hand.');
     }
 
-    public function step(Scenario $scenario, string $inject, string $step, ScenarioChecker $checker, ScenarioDrafter $drafter): RedirectResponse
+    public function step(Request $request, Scenario $scenario, string $inject, string $step, ScenarioChecker $checker, ScenarioDrafter $drafter): RedirectResponse
     {
         $data = $checker->read($scenario->source);
         $n = array_search($inject, array_column($data['injects'], 'id'), true);
@@ -75,6 +76,7 @@ class AiScenarioController
             $data = match ($step) {
                 'inject' => $drafter->inject($data, $n, $plan?->concepts() ?? [], array_keys($plan?->profileValues() ?? [])),
                 'artifact' => $drafter->artifact($data, $n),
+                'picture' => $drafter->picture($data, $n),
                 'rubric' => $drafter->rubric($data, $n),
             };
         } catch (AiException $e) {
@@ -82,6 +84,12 @@ class AiScenarioController
         }
 
         $scenario->forceFill(['source' => self::yaml($data)])->save();
+
+        // A new picture prompt: the image provider makes the picture in the queue worker.
+        if ($step === 'picture' && Gate::allows('use-images')) {
+            $artifacts = $data['injects'][$n]['artifacts'];
+            ScenarioImage::request($scenario, $inject, count($artifacts) - 1, (string) end($artifacts)['prompt'], $request->user()->id);
+        }
 
         return redirect()->to(route('scenarios.show', $scenario).'#'.$inject)
             ->with('status', "The AI changed inject $inject. Check the result.");
@@ -92,7 +100,6 @@ class AiScenarioController
      */
     private static function yaml(array $scenario): string
     {
-        return "# Draft written with AI assistance. Check every part.\n"
-            .Yaml::dump($scenario, 10, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        return "# Draft written with AI assistance. Check every part.\n".ScenarioChecker::dump($scenario);
     }
 }
