@@ -29,9 +29,12 @@ class ImageProviderTest extends TestCase
         $images = new LocalImageProvider('http://images:1234', '', 'flux-2-klein-4b', 30);
 
         $this->assertSame(FakeImages::png(), $images->generate('An open door at night'));
-        Http::assertSent(fn (Request $request) => $request['size'] === '512x512'
-            && $request['output_format'] === 'png'
-            && $request['prompt'] === 'An open door at night <sd_cpp_extra_args>{"sample_params":{"sample_steps":4,"guidance":{"txt_cfg":1.0}}}</sd_cpp_extra_args>');
+        Http::assertSent(function (Request $request) {
+            preg_match('#^An open door at night <sd_cpp_extra_args>(.+)</sd_cpp_extra_args>$#', $request['prompt'], $m);
+
+            return $request['size'] === '512x512' && $request['output_format'] === 'png'
+                && json_decode($m[1] ?? 'null', true) == ['sample_params' => ['sample_steps' => 4, 'guidance' => ['txt_cfg' => 1]]];
+        });
     }
 
     public function test_the_local_server_errors_are_clear(): void
