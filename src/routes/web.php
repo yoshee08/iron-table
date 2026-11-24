@@ -10,8 +10,8 @@ use App\Http\Controllers\LiveController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
-use App\Http\Controllers\ScenarioImageController;
 use App\Http\Controllers\ScenarioController;
+use App\Http\Controllers\ScenarioImageController;
 use App\Http\Middleware\RequireTwoFactorForStaff;
 use Illuminate\Support\Facades\Route;
 
