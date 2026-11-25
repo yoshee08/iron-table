@@ -7,6 +7,7 @@ use App\Http\Controllers\AiScenarioController;
 use App\Http\Controllers\ConsoleController;
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\LiveController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
@@ -74,6 +75,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/exercises/{exercise}/session/{action}', [ConsoleController::class, 'session'])->name('exercises.session');
             Route::post('/exercises/{exercise}/release', [ConsoleController::class, 'release'])->name('exercises.release');
             Route::post('/exercises/{exercise}/clock', [ConsoleController::class, 'clock'])->name('exercises.clock');
+            Route::post('/exercises/{exercise}/write', [ConsoleController::class, 'write'])->name('exercises.write');
         });
         Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
 
@@ -82,6 +84,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/exercises/{exercise}/live', [LiveController::class, 'show'])->name('exercises.live');
         Route::post('/exercises/{exercise}/responses', [LiveController::class, 'respond'])->name('exercises.responses.store');
         Route::get('/exercises/{exercise}/images/{name}', [LiveController::class, 'image'])->name('exercises.image');
+        Route::post('/exercises/{exercise}/logs/{type}', [LogController::class, 'store'])->name('exercises.logs.store');
         Route::get('/plans/{plan}/download', [PlanController::class, 'download'])->name('plans.download');
 
         Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {

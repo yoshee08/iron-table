@@ -2,12 +2,13 @@
 //
 // The live part (#live) of the exercise screens. On each "changed" event of the
 // exercise channel, the page loads itself again and replaces #live. Text that a
-// user typed in a field with data-keep stays. The real clock counts each second.
+// user typed in a field with data-keep stays, and open <details> with an id stay open.
+// The real clock counts each second.
 
 const live = document.getElementById('live');
 
 function valuesOf(root) {
-    const values = {};
+    const values = { open: [...root.querySelectorAll('details[id][open]')].map((details) => details.id) };
     root.querySelectorAll('[data-keep]').forEach((field) => {
         if (field.type === 'checkbox') {
             values[field.id] = field.checked;
@@ -21,6 +22,8 @@ function valuesOf(root) {
 }
 
 function restore(values) {
+    values.open.forEach((id) => document.getElementById(id)?.setAttribute('open', ''));
+    delete values.open;
     for (const [id, value] of Object.entries(values)) {
         const field = document.getElementById(id);
         if (!field) continue;
