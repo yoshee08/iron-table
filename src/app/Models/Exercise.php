@@ -60,6 +60,54 @@ class Exercise extends Model
     }
 
     /**
+     * @return HasMany<RubricMark, $this>
+     */
+    public function marks(): HasMany
+    {
+        return $this->hasMany(RubricMark::class);
+    }
+
+    /**
+     * @return HasMany<ObjectiveRating, $this>
+     */
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(ObjectiveRating::class);
+    }
+
+    /**
+     * @return HasMany<Finding, $this>
+     */
+    public function findings(): HasMany
+    {
+        return $this->hasMany(Finding::class)->orderBy('id');
+    }
+
+    /**
+     * Scores by IR phase and in total (spec section 8.3). The phase of a rubric item is
+     * the "phase" of its inject. Items without a mark count as not met.
+     *
+     * @return array{phases: array<string, array{earned: int, possible: int}>, earned: int, possible: int, percent: ?int}
+     */
+    public function scores(): array
+    {
+        $marks = $this->marks->keyBy(fn (RubricMark $mark) => $mark->inject_key.'#'.$mark->item);
+        $phases = [];
+        foreach ($this->scenario['injects'] as $inject) {
+            $phase = (string) ($inject['phase'] ?? 'other');
+            foreach ($this->scenario['rubric'][$inject['id']] ?? [] as $n => $item) {
+                $phases[$phase] ??= ['earned' => 0, 'possible' => 0];
+                $phases[$phase]['possible'] += $item['points'];
+                $phases[$phase]['earned'] += $marks->get($inject['id'].'#'.$n)?->points ?? 0;
+            }
+        }
+        $earned = array_sum(array_column($phases, 'earned'));
+        $possible = array_sum(array_column($phases, 'possible'));
+
+        return ['phases' => $phases, 'earned' => $earned, 'possible' => $possible, 'percent' => $possible > 0 ? intdiv($earned * 100, $possible) : null];
+    }
+
+    /**
      * @return BelongsTo<IrPlan, $this>
      */
     public function plan(): BelongsTo

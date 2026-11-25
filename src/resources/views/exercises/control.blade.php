@@ -7,6 +7,7 @@
             @include('exercises._clock')
             <a href="{{ route('exercises.live', $exercise) }}" class="underline underline-offset-4">Live screen</a>
             <a href="{{ route('exercises.display', $exercise) }}" target="_blank" class="underline underline-offset-4">Shared display</a>
+            <a href="{{ route('exercises.review', $exercise) }}" class="underline underline-offset-4">Review</a>
             <a href="{{ route('exercises.setup', $exercise) }}" class="underline underline-offset-4">Participants ({{ $participants->count() }})</a>
             <span>Roles confirmed: <strong>{{ $participants->whereNotNull('confirmed_at')->count() }} of {{ $participants->count() }}</strong>@if ($waiting = $participants->whereNull('confirmed_at')->map(fn ($p) => $p->user->name)->implode(', ')) (waiting: {{ $waiting }})@endif</span>
         </div>

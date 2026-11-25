@@ -38,6 +38,7 @@ briefing: >
 
 injects:
   - id: inj-1
+    phase: detection
     at: "{{facts.rule_found_time}}"
     title: The help desk reports a strange mailbox rule
     audience: [all]
@@ -63,6 +64,7 @@ injects:
         goto: inj-2b
 
   - id: inj-2a
+    phase: containment
     at: "{{facts.disable_time}}"
     title: Sign-in logs show a login from another country
     audience: [all]
@@ -81,6 +83,7 @@ injects:
     next: inj-3
 
   - id: inj-2b
+    phase: containment
     at: "{{facts.spread_time}}"
     title: More mail goes to the external address
     audience: [all]
@@ -93,6 +96,7 @@ injects:
     next: inj-3
 
   - id: inj-3
+    phase: post-incident
     at: "{{facts.cui_question_time}}"
     title: Finance asks if the forwarded mail contained CUI
     audience: [all]

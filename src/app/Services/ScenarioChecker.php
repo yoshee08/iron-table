@@ -103,6 +103,7 @@ class ScenarioChecker
             $where = "Inject $id";
             $this->optionalText($inject, 'body', $where);
             $this->optionalText($inject, 'next', $where);
+            $this->optionalText($inject, 'phase', $where);
             $this->optionalTextList($inject, 'audience', $where);
             $this->optionalTextList($inject, 'questions', $where);
             $this->optionalTextList($inject, 'expected_plan', $where);

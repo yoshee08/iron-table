@@ -11,6 +11,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\ScenarioImageController;
 use App\Http\Middleware\RequireTwoFactorForStaff;
@@ -76,6 +77,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/exercises/{exercise}/release', [ConsoleController::class, 'release'])->name('exercises.release');
             Route::post('/exercises/{exercise}/clock', [ConsoleController::class, 'clock'])->name('exercises.clock');
             Route::post('/exercises/{exercise}/write', [ConsoleController::class, 'write'])->name('exercises.write');
+
+            // Review: debrief scores, ratings and findings (spec sections 4.4 and 8.3).
+            Route::get('/exercises/{exercise}/review', [ReviewController::class, 'show'])->name('exercises.review');
+            Route::post('/exercises/{exercise}/review/marks', [ReviewController::class, 'mark'])->name('exercises.review.marks');
+            Route::post('/exercises/{exercise}/review/objectives/{objective}', [ReviewController::class, 'rate'])->whereNumber('objective')->name('exercises.review.rate');
+            Route::post('/exercises/{exercise}/findings', [ReviewController::class, 'addFinding'])->name('exercises.findings.store');
+            Route::put('/exercises/{exercise}/findings/{finding}', [ReviewController::class, 'updateFinding'])->scopeBindings()->name('exercises.findings.update');
+            Route::delete('/exercises/{exercise}/findings/{finding}', [ReviewController::class, 'deleteFinding'])->scopeBindings()->name('exercises.findings.destroy');
         });
         Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
 

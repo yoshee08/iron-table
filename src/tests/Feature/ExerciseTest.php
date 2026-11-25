@@ -5,6 +5,7 @@
 namespace Tests\Feature;
 
 use App\Events\ExerciseChanged;
+use App\Http\Controllers\ReviewController;
 use App\Models\Exercise;
 use App\Models\IrPlan;
 use App\Models\Scenario;
@@ -305,6 +306,75 @@ class ExerciseTest extends TestCase
             ->assertDontSee('Secret moderator note.')
             ->assertDontSee('Severity matches the plan table');
         $this->actingAs(User::factory()->create())->get("/exercises/{$exercise->id}/display")->assertForbidden();
+    }
+
+    public function test_the_moderator_scores_the_rubric_by_phase(): void
+    {
+        $exercise = $this->exercise();
+        $url = "/exercises/{$exercise->id}/review/marks";
+
+        $this->actingAs($this->moderator)->post($url, ['marks' => [
+            'inj-1' => [['result' => 'met'], ['result' => 'partly']],
+            'inj-3' => [['result' => 'not_met']],
+        ]])->assertSessionHasNoErrors();
+        $scores = $exercise->fresh()->scores();
+        $this->assertSame([3, 8, 37], [$scores['earned'], $scores['possible'], $scores['percent']]);
+        $this->assertSame(['detection' => ['earned' => 3, 'possible' => 4], 'post-incident' => ['earned' => 0, 'possible' => 4]], $scores['phases']);
+
+        // A changed score needs a reason, and the reason is kept.
+        $this->actingAs($this->moderator)->post($url, ['marks' => ['inj-3' => [['result' => 'not_met', 'points' => 1]]]])->assertSessionHasErrors('marks.inj-3.0.reason');
+        $this->actingAs($this->moderator)->post($url, ['marks' => ['inj-3' => [['result' => 'not_met', 'points' => 1, 'reason' => 'They named the legal team late.']]]])->assertSessionHasNoErrors();
+        $this->assertSame('They named the legal team late.', $exercise->marks()->where('inject_key', 'inj-3')->sole()->reason);
+
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/review")->assertOk()->assertSee('50%')->assertSee('They named the legal team late.');
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/review")->assertForbidden();
+    }
+
+    public function test_an_objective_rating_needs_a_justification(): void
+    {
+        $exercise = $this->exercise();
+
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/review/objectives/0", ['rating' => 'some'])->assertSessionHasErrors('justification');
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/review/objectives/0", ['rating' => 'some', 'justification' => 'The report went out after 40 minutes.']);
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/review/objectives/9", ['rating' => 'some', 'justification' => 'X'])->assertNotFound();
+
+        $this->assertSame(['some', 'The report went out after 40 minutes.'], [$exercise->ratings()->sole()->rating, $exercise->ratings()->sole()->justification]);
+    }
+
+    public function test_findings_and_corrective_actions(): void
+    {
+        $exercise = $this->exercise();
+        $url = "/exercises/{$exercise->id}/findings";
+
+        $this->actingAs($this->moderator)->post($url, ['type' => 'plan_gap', 'text' => 'The plan names no CUI decision owner.', 'action' => 'Name the owner.'])
+            ->assertSessionHasErrors(['owner', 'due_date']);
+        $this->actingAs($this->moderator)->post($url, ['type' => 'plan_gap', 'text' => 'The plan names no CUI decision owner.', 'control' => '3.6.1',
+            'action' => 'Name the owner in section 5.', 'owner' => 'CISO', 'due_date' => '2020-01-31', 'documents' => 'IR plan section 5'])->assertSessionHasNoErrors();
+        $this->actingAs($this->moderator)->post($url, ['type' => 'strength', 'text' => 'Fast report to security.']);
+
+        $finding = $exercise->findings()->first();
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/review")->assertOk()
+            ->assertSee('The plan names no CUI decision owner.')->assertSee('(overdue)')->assertSee('Fast report to security.');
+        $this->actingAs($this->moderator)->put("{$url}/{$finding->id}", ['status' => 'done']);
+        $this->assertSame('done', $finding->fresh()->status);
+        $this->actingAs($this->moderator)->delete("{$url}/{$finding->id}");
+        $this->assertSame(1, $exercise->findings()->count());
+    }
+
+    public function test_the_review_shows_the_plan_coverage_of_the_exercise(): void
+    {
+        $exercise = $this->exercise();
+        $this->control($exercise, 'session/start');
+        $this->control($exercise, 'release', ['inject' => 'inj-1']);
+        $release = $exercise->releases()->sole();
+        $cited = $this->plan->sections()->whereIn('concept', ['reporting_procedure', 'containment'])->pluck('id')->all();
+        $this->actingAs($this->player)->post("/exercises/{$exercise->id}/responses", ['inject_release_id' => $release->id, 'body' => 'Report and contain.', 'sections' => $cited]);
+
+        $coverage = ReviewController::coverage($exercise);
+        $this->assertSame(['Reporting a Suspected Incident'], array_map(fn ($section) => $section->title, $coverage['used']));
+        $this->assertSame(['Severity Table'], array_map(fn ($section) => $section->title, $coverage['missed']));
+        $this->assertSame(['Containment'], array_map(fn ($section) => $section->title, $coverage['extra']));
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/review")->assertOk()->assertSeeText('Missed (expected, not cited): 2 Severity Table');
     }
 
     public function test_only_participants_respond_and_only_while_the_session_runs(): void
