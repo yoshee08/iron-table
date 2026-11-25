@@ -15,7 +15,7 @@ class Participant extends Model
 {
     protected function casts(): array
     {
-        return ['role' => ExerciseRole::class];
+        return ['role' => ExerciseRole::class, 'confirmed_at' => 'datetime'];
     }
 
     /**

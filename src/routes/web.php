@@ -83,6 +83,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/exercises', [ExerciseController::class, 'index'])->name('exercises.index');
         Route::get('/exercises/{exercise}/live', [LiveController::class, 'show'])->name('exercises.live');
         Route::post('/exercises/{exercise}/responses', [LiveController::class, 'respond'])->name('exercises.responses.store');
+        Route::post('/exercises/{exercise}/confirm', [LiveController::class, 'confirm'])->name('exercises.confirm');
+        Route::get('/exercises/{exercise}/display', [LiveController::class, 'display'])->name('exercises.display');
         Route::get('/exercises/{exercise}/images/{name}', [LiveController::class, 'image'])->name('exercises.image');
         Route::post('/exercises/{exercise}/logs/{type}', [LogController::class, 'store'])->name('exercises.logs.store');
         Route::get('/plans/{plan}/download', [PlanController::class, 'download'])->name('plans.download');

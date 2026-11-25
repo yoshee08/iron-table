@@ -6,7 +6,9 @@
             @include('exercises._status', ['status' => $exercise->status])
             @include('exercises._clock')
             <a href="{{ route('exercises.live', $exercise) }}" class="underline underline-offset-4">Live screen</a>
+            <a href="{{ route('exercises.display', $exercise) }}" target="_blank" class="underline underline-offset-4">Shared display</a>
             <a href="{{ route('exercises.setup', $exercise) }}" class="underline underline-offset-4">Participants ({{ $participants->count() }})</a>
+            <span>Roles confirmed: <strong>{{ $participants->whereNotNull('confirmed_at')->count() }} of {{ $participants->count() }}</strong>@if ($waiting = $participants->whereNull('confirmed_at')->map(fn ($p) => $p->user->name)->implode(', ')) (waiting: {{ $waiting }})@endif</span>
         </div>
 
         @if (session('status'))
@@ -57,6 +59,16 @@
                     <input id="write-title" name="title" required maxlength="255" data-keep class="mb-2 w-full rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
                     <label for="write-body" class="mb-1 block text-xs font-medium">Text that participants see</label>
                     <textarea id="write-body" name="body" rows="3" required data-keep class="mb-2 w-full rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950"></textarea>
+                    <div class="mb-2 grid gap-2 sm:grid-cols-2">
+                        <div>
+                            <label for="write-audience" class="mb-1 block text-xs font-medium">Only for (optional: plan roles or exercise roles, with commas)</label>
+                            <input id="write-audience" name="audience" maxlength="255" data-keep placeholder="CISO, Legal" class="w-full rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
+                        </div>
+                        <div>
+                            <label for="write-timer" class="mb-1 block text-xs font-medium">Timer in minutes (optional)</label>
+                            <input id="write-timer" name="timer_minutes" type="number" min="1" max="240" data-keep class="w-full rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
+                        </div>
+                    </div>
                     <x-button>Release the new inject</x-button>
                 </form>
             </details>
@@ -90,6 +102,12 @@
                             @if (! empty($inject['expected_plan']))
                                 <p class="text-xs text-zinc-600 dark:text-zinc-400">Expected plan: {{ implode(', ', $inject['expected_plan']) }}</p>
                             @endif
+                            @if (! empty($inject['audience']) && array_intersect(['all', 'everyone'], array_map('strtolower', $inject['audience'])) === [])
+                                <p class="text-xs font-semibold text-amber-800 dark:text-amber-300">Only for: {{ implode(', ', $inject['audience']) }}</p>
+                            @endif
+                            @isset($inject['timer'])
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400">Timer: {{ $inject['timer'] }} min</p>
+                            @endisset
                             @if (! empty($inject['branches']))
                                 <ul class="text-xs text-zinc-600 dark:text-zinc-400">
                                     @foreach ($inject['branches'] as $branch)
@@ -123,7 +141,8 @@
                 <h2 id="feed" class="mb-2 text-lg font-semibold">Responses</h2>
                 @forelse ($released as $release)
                     <div class="mb-4">
-                        <p class="text-sm font-medium">{{ $release->inject_key }}: {{ $release->title }} <span class="text-xs text-zinc-600 dark:text-zinc-400">(released at simulated {{ $release->sim_time }})</span></p>
+                        <p class="text-sm font-medium">{{ $release->inject_key }}: {{ $release->title }} <span class="text-xs text-zinc-600 dark:text-zinc-400">(released at simulated {{ $release->sim_time }}@unless ($release->isForAll()); only for {{ implode(', ', $release->audience) }}@endunless)</span></p>
+                        @include('exercises._timer')
                         @forelse ($release->responses as $response)
                             <div class="mt-2 rounded border border-zinc-200 bg-white p-2 text-sm dark:border-zinc-800 dark:bg-zinc-900">
                                 <p class="text-xs text-zinc-600 dark:text-zinc-400">{{ $response->user?->name ?? 'Deleted user' }}@if ($response->plan_role) ({{ $response->plan_role }})@endif · simulated {{ $response->sim_time }} · real {{ $response->created_at->format('H:i') }}</p>

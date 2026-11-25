@@ -16,6 +16,14 @@
         @endif
         @include('exercises._stopped')
 
+        @if ($participant && ! $participant->confirmed_at && $exercise->status !== 'ended')
+            <form method="POST" action="{{ route('exercises.confirm', $exercise) }}" class="mb-4 flex flex-wrap items-center gap-3 rounded border border-blue-300 bg-blue-50 p-3 text-sm dark:border-blue-700 dark:bg-blue-950">
+                @csrf
+                <span>You play: <strong>{{ $participant->plan_role ?? $participant->role->label() }}</strong> ({{ $participant->role->label() }}). Check that this is right.</span>
+                <x-button>Confirm my role</x-button>
+            </form>
+        @endif
+
         @if ($logs !== null)
             <section aria-labelledby="scribe" class="mb-6">
                 <h2 id="scribe" class="mb-2 text-lg font-semibold">Scribe: logs</h2>
@@ -43,6 +51,10 @@
                 <article id="release-{{ $release->id }}" class="mb-6 rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                     <p class="text-xs text-zinc-600 dark:text-zinc-400">Simulated {{ $release->sim_day > 1 ? 'day '.$release->sim_day.' ' : '' }}{{ $release->sim_time }}@if ($loop->first) · <strong>Newest</strong>@endif</p>
                     <h2 class="mb-2 text-lg font-semibold">{{ $release->title }}</h2>
+                    @unless ($release->isForAll())
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">Only for: {{ implode(', ', $release->audience) }}</p>
+                    @endunless
+                    @include('exercises._timer')
                     @if ($release->body !== '')
                         <p class="mb-3 whitespace-pre-line">{{ $release->body }}</p>
                     @endif
