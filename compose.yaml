@@ -145,6 +145,8 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
     mem_limit: ${AI_IMAGE_MEMORY_LIMIT:-10g}
+    # CPU cores for pictures. 0 = all cores. Set fewer to keep the app fast on a small server.
+    cpus: ${AI_IMAGE_CPUS:-0}
     security_opt:
       - no-new-privileges:true
 

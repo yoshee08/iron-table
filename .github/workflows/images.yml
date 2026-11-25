@@ -30,7 +30,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The image build, 5.2 GB of models and the Docker images need more free disk than the runner has.
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
       - name: Build, download the models and make one picture
+        # Leave one of the 4 runner cores free, or the runner stops answering.
+        env:
+          AI_IMAGE_CPUS: "3"
         run: ./.github/ci/check-images.sh
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

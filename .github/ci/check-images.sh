@@ -10,16 +10,20 @@ cd "$(dirname "$0")/../.."
 
 [ -f .env ] || ./scripts/setup.sh
 
-echo "1/4 Build the image server"
+stage() {
+    echo "== $1 ($(date -u +%H:%M:%S), free memory $(free -m | awk '/Mem:/ {print $7}') MB, free disk $(df -h --output=avail / | tail -1))"
+}
+
+stage "1/4 Build the image server"
 docker compose --profile images build images
 
-echo "2/4 The server knows the options in compose.yaml"
+stage "2/4 The server knows the options in compose.yaml"
 help="$(docker run --rm --entrypoint /sd-server iron-table-images:79dc7ca --help 2>&1 || true)"
 for option in --listen-ip --listen-port --model-dir --diffusion-model --llm --vae --cfg-scale; do
     grep -qF -- "$option" <<<"$help" || { echo "sd-server has no option $option"; exit 1; }
 done
 
-echo "3/4 Download the models and start the server"
+stage "3/4 Download the models and start the server"
 docker compose --profile images up -d images
 for _ in $(seq 1 60); do
     if docker run --rm --network iron-table_default curlimages/curl:8.22.0 -fs http://images:1234/v1/models >/dev/null; then
@@ -28,7 +32,7 @@ for _ in $(seq 1 60); do
     sleep 10
 done
 
-echo "4/4 Make one picture (this takes minutes on a CPU)"
+stage "4/4 Make one picture (this takes minutes on a CPU)"
 start=$(date +%s)
 docker run --rm --network iron-table_default curlimages/curl:8.22.0 -fsS --max-time 1800 \
     -H 'Content-Type: application/json' \
