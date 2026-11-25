@@ -28,6 +28,7 @@
                             @can('moderate')
                                 <a href="{{ route('exercises.control', $exercise) }}" class="underline underline-offset-4">Control</a>
                                 <a href="{{ route('exercises.setup', $exercise) }}" class="underline underline-offset-4">Participants</a>
+                                <a href="{{ route('exercises.review', $exercise) }}" class="underline underline-offset-4">Review</a>
                             @endcan
                         </td>
                     </tr>

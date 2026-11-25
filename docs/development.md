@@ -108,6 +108,16 @@ During the session:
 
 Screens update immediately through the live connection. If the connection drops, they update every 30 seconds.
 
+### Debrief (Review)
+
+Open **Exercises** > **Review** (moderators only).
+
+- **Rubric**: mark each item as met, partly met or not met. Met gives all points, partly met half. To give other points, write a reason. The score shows by IR phase (the `phase` of the inject) and in total.
+- **Objectives**: give each objective an HSEEP rating. A rating needs a justification.
+- **Plan coverage**: the plan sections that were expected and cited (used), expected and not cited (missed), cited and not expected (extra), and the responses without plan coverage.
+- **Parking lot**: the topics from the session.
+- **Findings**: record strengths, weaknesses and plan gaps. A corrective action needs an owner and a due date. Overdue actions are marked.
+
 ### AI assistance (optional)
 
 - The AI writes scenario drafts in small steps: the outline and the facts, then one inject text, one artifact or one rubric at a time. Moderators check each step.
