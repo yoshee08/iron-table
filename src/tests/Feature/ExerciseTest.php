@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Tests\FakeImages;
 use Tests\TestCase;
+use ZipArchive;
 
 class ExerciseTest extends TestCase
 {
@@ -375,6 +376,53 @@ class ExerciseTest extends TestCase
         $this->assertSame(['Severity Table'], array_map(fn ($section) => $section->title, $coverage['missed']));
         $this->assertSame(['Containment'], array_map(fn ($section) => $section->title, $coverage['extra']));
         $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/review")->assertOk()->assertSeeText('Missed (expected, not cited): 2 Severity Table');
+    }
+
+    public function test_the_after_action_report_becomes_final_with_an_evidence_package(): void
+    {
+        Storage::fake('local');
+        $exercise = $this->exercise();
+        $this->control($exercise, 'session/start');
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/logs/communication", ['direction' => 'external', 'summary' => '=HYPERLINK("http://x")']);
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/review/marks", ['marks' => ['inj-1' => [['result' => 'met'], ['result' => 'met']]]]);
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/findings", ['type' => 'strength', 'text' => 'Fast report to security.']);
+
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/report")->assertOk()
+            ->assertSee('After-action report: '.$exercise->title)->assertSee('Pat Player')->assertSee('Fast report to security.');
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/report", ['tlp' => 'TLP:GREEN', 'summary' => 'A phishing email led to a mailbox rule.', 'phases' => ['detection' => 'The team found the rule fast.']])
+            ->assertSessionHasNoErrors();
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/report/final")->assertSessionHasErrors('report');
+
+        $this->control($exercise, 'session/end');
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/report/final")->assertSessionHasNoErrors();
+        $report = $exercise->reports()->sole();
+        $this->assertSame(['final', 'TLP:GREEN', $this->moderator->name], [$report->status, $report->tlp, $report->content['closure']['approver']]);
+        $this->assertSame('The team found the rule fast.', $report->content['phases'][0]['text']);
+        $this->assertStringStartsWith('%PDF', (string) Storage::get($report->folder().'/aar.pdf'));
+        $this->assertSame(hash('sha256', (string) Storage::get($report->folder().'/aar.pdf')), $report->file_hash);
+        $this->assertStringContainsString("'=HYPERLINK", (string) Storage::get($report->folder().'/communication.csv'));
+        $this->assertStringContainsString('## 3.6.3', (string) Storage::get($report->folder().'/mapping.md'));
+
+        // A final version does not change.
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/report", ['tlp' => 'TLP:RED'])->assertStatus(409);
+
+        $download = $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/reports/{$report->id}/evidence.zip");
+        $download->assertOk();
+        $zip = new ZipArchive;
+        $zip->open($download->baseResponse->getFile()->getPathname());
+        $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);
+        $this->assertSame(['aar.pdf', 'action.csv', 'communication.csv', 'logs.pdf', 'mapping.md', 'scenario.yaml', 'validation.csv'], array_keys($manifest['files']));
+        foreach ($manifest['files'] as $name => $hash) {
+            $this->assertSame($hash, hash('sha256', (string) $zip->getFromName($name)), $name);
+        }
+        $this->assertStringContainsString($report->file_hash.'  aar.pdf', (string) $zip->getFromName('SHA256SUMS'));
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/reports/{$report->id}/aar.pdf")->assertOk();
+
+        // A change after Final is a new version.
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/report/new-version");
+        $draft = $exercise->reports()->first();
+        $this->assertSame([2, 'draft', 'A phishing email led to a mailbox rule.', 'The team found the rule fast.'], [$draft->version, $draft->status, $draft->content['summary'], $draft->content['phases']['detection']]);
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/report")->assertForbidden();
     }
 
     public function test_only_participants_respond_and_only_while_the_session_runs(): void

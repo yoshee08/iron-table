@@ -8,6 +8,7 @@
         @include('exercises._status', ['status' => $exercise->status])
         <a href="{{ route('exercises.control', $exercise) }}" class="underline underline-offset-4">Control</a>
         <a href="{{ route('exercises.setup', $exercise) }}" class="underline underline-offset-4">Participants</a>
+        <a href="{{ route('exercises.report', $exercise) }}" class="underline underline-offset-4">After-action report</a>
     </p>
     @if (session('status'))
         <p role="status" class="mb-4 rounded border border-green-300 bg-green-50 p-3 text-sm dark:border-green-700 dark:bg-green-950">{{ session('status') }}</p>

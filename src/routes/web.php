@@ -11,6 +11,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\ScenarioImageController;
@@ -85,6 +86,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/exercises/{exercise}/findings', [ReviewController::class, 'addFinding'])->name('exercises.findings.store');
             Route::put('/exercises/{exercise}/findings/{finding}', [ReviewController::class, 'updateFinding'])->scopeBindings()->name('exercises.findings.update');
             Route::delete('/exercises/{exercise}/findings/{finding}', [ReviewController::class, 'deleteFinding'])->scopeBindings()->name('exercises.findings.destroy');
+
+            // After-action report and evidence export (spec sections 4.5, 8.4 and 8.5).
+            Route::get('/exercises/{exercise}/report', [ReportController::class, 'show'])->name('exercises.report');
+            Route::post('/exercises/{exercise}/report', [ReportController::class, 'save'])->name('exercises.report.save');
+            Route::post('/exercises/{exercise}/report/final', [ReportController::class, 'finalize'])->name('exercises.report.final');
+            Route::post('/exercises/{exercise}/report/new-version', [ReportController::class, 'newVersion'])->name('exercises.report.new');
+            Route::get('/exercises/{exercise}/reports/{report}/aar.pdf', [ReportController::class, 'pdf'])->scopeBindings()->name('exercises.report.pdf');
+            Route::get('/exercises/{exercise}/reports/{report}/evidence.zip', [ReportController::class, 'export'])->scopeBindings()->name('exercises.report.export');
         });
         Route::get('/plans/{plan}', [PlanController::class, 'show'])->name('plans.show');
 

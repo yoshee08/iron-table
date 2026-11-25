@@ -60,6 +60,14 @@ class Exercise extends Model
     }
 
     /**
+     * @return HasMany<Report, $this>
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class)->orderByDesc('version');
+    }
+
+    /**
      * @return HasMany<RubricMark, $this>
      */
     public function marks(): HasMany
