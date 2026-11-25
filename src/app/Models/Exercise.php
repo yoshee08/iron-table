@@ -52,6 +52,14 @@ class Exercise extends Model
     }
 
     /**
+     * @return HasMany<LogEntry, $this>
+     */
+    public function logEntries(): HasMany
+    {
+        return $this->hasMany(LogEntry::class)->orderByDesc('id');
+    }
+
+    /**
      * @return BelongsTo<IrPlan, $this>
      */
     public function plan(): BelongsTo

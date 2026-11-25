@@ -48,6 +48,29 @@
             @endif
         </section>
 
+        @if ($exercise->status === 'running')
+            <details id="write-inject" class="mb-6 rounded border border-zinc-200 bg-white text-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <summary class="cursor-pointer px-3 py-2 font-medium">Write a new inject (for an unexpected response)</summary>
+                <form method="POST" action="{{ route('exercises.write', $exercise) }}" class="border-t border-zinc-200 p-3 dark:border-zinc-800">
+                    @csrf
+                    <label for="write-title" class="mb-1 block text-xs font-medium">Title</label>
+                    <input id="write-title" name="title" required maxlength="255" data-keep class="mb-2 w-full rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
+                    <label for="write-body" class="mb-1 block text-xs font-medium">Text that participants see</label>
+                    <textarea id="write-body" name="body" rows="3" required data-keep class="mb-2 w-full rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950"></textarea>
+                    <x-button>Release the new inject</x-button>
+                </form>
+            </details>
+        @endif
+
+        @if ($coverage)
+            <section aria-labelledby="coverage" class="mb-6 rounded border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <h2 id="coverage" class="mb-1 font-semibold">Plan coverage: {{ $released->first()->inject_key }} {{ $released->first()->title }}</h2>
+                <p>Used: <strong>{{ count($coverage['used']) }}</strong>@if ($coverage['used']) ({{ implode(', ', $coverage['used']) }})@endif
+                    · Missed: <strong>{{ count($coverage['missed']) }}</strong>@if ($coverage['missed']) ({{ implode(', ', $coverage['missed']) }})@endif
+                    · No plan coverage: <strong>{{ $coverage['gaps'] }}</strong> of {{ $coverage['responses'] }} responses</p>
+            </section>
+        @endif
+
         <div class="grid gap-6 lg:grid-cols-2">
             <section aria-labelledby="timeline">
                 <h2 id="timeline" class="mb-2 text-lg font-semibold">Timeline</h2>
@@ -123,5 +146,17 @@
                 @endforelse
             </section>
         </div>
+
+        <section aria-labelledby="logs" class="mt-8 grid gap-6 lg:grid-cols-2">
+            <div>
+                <h2 id="logs" class="mb-2 text-lg font-semibold">Notes and logs</h2>
+                @if (in_array($exercise->status, \App\Models\Exercise::LIVE, true))
+                    @include('exercises._log-forms', ['types' => ['note', 'parking', 'communication', 'action', 'validation']])
+                @endif
+            </div>
+            <div class="lg:pt-9">
+                @include('exercises._log-feed')
+            </div>
+        </section>
     </div>
 </x-layouts.app>

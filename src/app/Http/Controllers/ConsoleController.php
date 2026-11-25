@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Events\ExerciseChanged;
 use App\Models\Exercise;
+use App\Models\InjectRelease;
+use App\Models\PlanSection;
 use App\Services\ScenarioChecker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,6 +44,8 @@ class ConsoleController
             'releasedKeys' => $released->pluck('inject_key')->all(),
             'suggested' => $suggested,
             'participants' => $exercise->participants()->with('user')->get(),
+            'coverage' => $released->isEmpty() ? null : self::coverage($exercise, $released->first()),
+            'logs' => $exercise->logEntries()->with('recorder')->get(),
         ]);
     }
 
@@ -103,6 +107,58 @@ class ConsoleController
         self::changed($exercise);
 
         return back()->with('status', "Inject $key released.");
+    }
+
+    /**
+     * A new inject that the moderator writes during play, for an unexpected response (spec section 4.3, step 4).
+     */
+    public function write(Request $request, Exercise $exercise): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:5000'],
+        ]);
+        if ($exercise->status !== 'running') {
+            return back()->withErrors(['session' => 'Start or resume the session before you release an inject.']);
+        }
+
+        $key = 'new-'.($exercise->releases()->where('inject_key', 'like', 'new-%')->count() + 1);
+        $exercise->releases()->forceCreate($data + [
+            'inject_key' => $key,
+            'artifacts' => [],
+            'questions' => [],
+            'sim_day' => $exercise->sim_day,
+            'sim_time' => $exercise->sim_time,
+            'released_by' => $request->user()->id,
+        ]);
+        self::changed($exercise);
+
+        return back()->with('status', "New inject $key released.");
+    }
+
+    /**
+     * Coverage of the current inject (spec section 7.1): which expected plan concepts
+     * the responses cite (used), which they do not (missed), and how many responses
+     * have no plan coverage (gaps).
+     *
+     * @return array{used: list<string>, missed: list<string>, gaps: int, responses: int}
+     */
+    public static function coverage(Exercise $exercise, InjectRelease $release): array
+    {
+        $inject = collect($exercise->scenario['injects'])->firstWhere('id', $release->inject_key);
+        $expected = $inject['expected_plan'] ?? [];
+        $cited = PlanSection::query()
+            ->whereIn('id', $release->responses->flatMap->citations->pluck('id'))
+            ->whereNotNull('concept')
+            ->pluck('concept')->unique()->all();
+        $used = array_values(array_intersect($expected, $cited));
+
+        return [
+            'used' => $used,
+            'missed' => array_values(array_diff($expected, $used)),
+            'gaps' => $release->responses->where('no_coverage', true)->count(),
+            'responses' => $release->responses->count(),
+        ];
     }
 
     /**

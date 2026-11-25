@@ -96,6 +96,12 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 5. Participants open **Live screen**. They see the injects and the artifacts, and send responses that cite plan sections.
 6. Select **STOP** if a real event needs attention. Select **Resume** to continue, or **End the session**.
 
+During the session:
+
+- **Write a new inject** releases an inject that you write for an unexpected response.
+- **Plan coverage** shows the expected plan concepts of the current inject that the responses cite (used), the ones that they do not cite (missed), and the responses without plan coverage.
+- **Notes and logs**: write moderator notes (only moderators see them) and parking-lot topics for the debrief. Scribes write the communication, action and validation logs on their live screen. Each entry gets the real time and the simulated time.
+
 Screens update immediately through the live connection. If the connection drops, they update every 30 seconds.
 
 ### AI assistance (optional)

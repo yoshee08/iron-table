@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ExerciseRole;
 use App\Models\Exercise;
 use App\Models\PlanSection;
 use App\Services\ScenarioChecker;
@@ -32,6 +33,8 @@ class LiveController
             'releases' => $exercise->releases()->with(['responses' => fn ($query) => $query->where('user_id', $request->user()->id)->with('citations')])->get(),
             'sections' => PlanSection::query()->where('ir_plan_id', $exercise->ir_plan_id)->orderBy('position')->get(),
             'canRespond' => $exercise->acceptsResponsesFrom($request->user()),
+            // Scribes write and read the logs here (spec section 7.3). Moderator notes stay on the console.
+            'logs' => $role === ExerciseRole::Scribe ? $exercise->logEntries()->where('type', '!=', 'note')->with('recorder')->get() : null,
         ]);
     }
 

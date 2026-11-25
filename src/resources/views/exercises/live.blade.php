@@ -16,6 +16,19 @@
         @endif
         @include('exercises._stopped')
 
+        @if ($logs !== null)
+            <section aria-labelledby="scribe" class="mb-6">
+                <h2 id="scribe" class="mb-2 text-lg font-semibold">Scribe: logs</h2>
+                @if (in_array($exercise->status, \App\Models\Exercise::LIVE, true))
+                    @include('exercises._log-forms', ['types' => ['communication', 'action', 'validation', 'parking']])
+                @endif
+                <details id="scribe-feed" class="mt-2 text-sm">
+                    <summary class="cursor-pointer">Entries ({{ $logs->count() }})</summary>
+                    <div class="mt-2">@include('exercises._log-feed')</div>
+                </details>
+            </section>
+        @endif
+
         @if ($exercise->status === 'prepared')
             <p class="mb-6">The session has not started. This page updates when the moderator starts it.</p>
         @else

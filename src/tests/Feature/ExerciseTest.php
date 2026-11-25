@@ -187,6 +187,71 @@ class ExerciseTest extends TestCase
         $this->actingAs($this->moderator)->post('/exercises', ['scenario_id' => $scenario->id])->assertSessionHasErrors('scenario_id');
     }
 
+    public function test_the_scribe_writes_the_logs_and_the_moderator_sees_them(): void
+    {
+        $exercise = $this->exercise();
+        $scribe = User::factory()->create(['name' => 'Sam Scribe']);
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/participants", ['user_id' => $scribe->id, 'role' => 'scribe']);
+        $entry = ['direction' => 'internal', 'from' => 'CISO', 'to' => 'Help desk', 'summary' => 'Disable the account now.'];
+
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/communication", $entry)->assertForbidden();
+        $this->control($exercise, 'session/start');
+
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/communication", $entry)->assertSessionHasNoErrors();
+        $log = $exercise->logEntries()->sole();
+        $this->assertSame(['communication', '10:40', $scribe->id, $entry], [$log->type, $log->sim_time, $log->recorded_by, $log->fields]);
+
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/action", ['phase' => 'lunch'])->assertSessionHasErrors('phase');
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/validation", ['system' => ''])->assertSessionHasErrors('log');
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/note", ['note' => 'X'])->assertForbidden();
+        $this->actingAs($this->player)->post("/exercises/{$exercise->id}/logs/parking", ['topic' => 'X'])->assertForbidden();
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/lunch", ['topic' => 'X'])->assertNotFound();
+
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/logs/note", ['note' => 'Ask about backups at the debrief.']);
+        $this->actingAs($scribe)->post("/exercises/{$exercise->id}/logs/parking", ['topic' => 'Who owns the MSP contract?']);
+
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/control")->assertOk()
+            ->assertSee('Disable the account now.')->assertSee('Sam Scribe')
+            ->assertSee('Ask about backups at the debrief.')->assertSee('Who owns the MSP contract?');
+        $this->actingAs($scribe)->get("/exercises/{$exercise->id}/live")->assertOk()
+            ->assertSee('Scribe: logs')->assertSee('Disable the account now.')->assertDontSee('Ask about backups at the debrief.');
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/live")->assertOk()
+            ->assertDontSee('Scribe: logs')->assertDontSee('Disable the account now.');
+    }
+
+    public function test_the_moderator_writes_a_new_inject_during_play(): void
+    {
+        $exercise = $this->exercise();
+        $inject = ['title' => 'The CEO calls', 'body' => 'The CEO asks if the press knows about this.'];
+
+        $this->control($exercise, 'write', $inject)->assertSessionHasErrors('session');
+        $this->control($exercise, 'session/start');
+        $this->control($exercise, 'write', $inject)->assertSessionHasNoErrors();
+        $this->control($exercise, 'write', ['title' => 'Second', 'body' => 'Text.']);
+
+        $this->assertSame(['new-2', 'new-1'], $exercise->releases()->pluck('inject_key')->all());
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/live")->assertOk()->assertSee('The CEO asks if the press knows about this.');
+    }
+
+    public function test_the_console_shows_the_plan_coverage_of_the_current_inject(): void
+    {
+        $exercise = $this->exercise();
+        $other = User::factory()->create();
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/participants", ['user_id' => $other->id, 'role' => 'participant']);
+        $this->control($exercise, 'session/start');
+        $this->control($exercise, 'release', ['inject' => 'inj-1']);
+        $release = $exercise->releases()->sole();
+        $reporting = $this->plan->sections()->where('concept', 'reporting_procedure')->sole();
+
+        $this->actingAs($this->player)->post("/exercises/{$exercise->id}/responses", ['inject_release_id' => $release->id, 'body' => 'We report it.', 'sections' => [$reporting->id]]);
+        $this->actingAs($other)->post("/exercises/{$exercise->id}/responses", ['inject_release_id' => $release->id, 'body' => 'We call the bank.', 'no_coverage' => '1']);
+
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/control")->assertOk()
+            ->assertSeeText('Used: 1 (reporting_procedure)')
+            ->assertSeeText('Missed: 1 (severity_table)')
+            ->assertSeeText('No plan coverage: 1 of 2 responses');
+    }
+
     public function test_only_participants_respond_and_only_while_the_session_runs(): void
     {
         $exercise = $this->exercise();
