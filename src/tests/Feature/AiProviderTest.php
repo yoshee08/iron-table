@@ -52,7 +52,7 @@ class AiProviderTest extends TestCase
             ->push(['choices' => [['message' => ['content' => '{"title": "Lost laptop", "points": 1}']]]])
             ->push(['error' => ['message' => 'Authentication Fails']], 401),
         ]);
-        $ai = new OpenAiCompatibleProvider('https://api.deepseek.com', 'secret-key', 'deepseek-chat', 30);
+        $ai = new OpenAiCompatibleProvider('https://api.deepseek.com', 'secret-key', 'deepseek-flash', 30);
 
         $this->assertSame(['title' => 'Lost laptop', 'points' => 1], $ai->json('Rules.', 'Task.', self::SCHEMA));
         Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer secret-key')

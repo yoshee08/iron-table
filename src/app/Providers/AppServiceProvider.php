@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
 
             return match ($ai['provider']) {
                 'anthropic' => new AnthropicProvider($ai['base_url'], $ai['api_key'], $ai['model'] ?: 'claude-opus-5-5', $ai['timeout']),
-                'openai_compatible' => new OpenAiCompatibleProvider($ai['base_url'], $ai['api_key'], $ai['model'] ?: 'deepseek-chat', $ai['timeout']),
+                'openai_compatible' => new OpenAiCompatibleProvider($ai['base_url'], $ai['api_key'], $ai['model'] ?: 'deepseek-flash', $ai['timeout']),
                 default => new OllamaProvider($ai['base_url'] ?: 'http://ollama:11434', '', $ai['model'] ?: 'qwen2.5:1.5b', $ai['timeout']),
             };
         });
