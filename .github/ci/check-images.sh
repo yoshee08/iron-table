@@ -8,21 +8,32 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
+# One stage per call (build, options, start, picture), so that CI shows which stage finished.
+# No argument: all stages.
+only="${1:-all}"
+
 [ -f .env ] || ./scripts/setup.sh
 
 stage() {
     echo "== $1 ($(date -u +%H:%M:%S), free memory $(free -m | awk '/Mem:/ {print $7}') MB, free disk $(df -h --output=avail / | tail -1))"
 }
 
+if [ "$only" = all ] || [ "$only" = build ]; then
 stage "1/4 Build the image server"
 docker compose --profile images build images
 
+fi
+
+if [ "$only" = all ] || [ "$only" = options ]; then
 stage "2/4 The server knows the options in compose.yaml"
 help="$(docker run --rm --entrypoint /sd-server iron-table-images:79dc7ca --help 2>&1 || true)"
 for option in --listen-ip --listen-port --model-dir --diffusion-model --llm --vae --cfg-scale; do
     grep -qF -- "$option" <<<"$help" || { echo "sd-server has no option $option"; exit 1; }
 done
 
+fi
+
+if [ "$only" = all ] || [ "$only" = start ]; then
 stage "3/4 Download the models and start the server"
 docker compose --profile images up -d images
 for _ in $(seq 1 60); do
@@ -32,6 +43,9 @@ for _ in $(seq 1 60); do
     sleep 10
 done
 
+fi
+
+if [ "$only" = all ] || [ "$only" = picture ]; then
 stage "4/4 Make one picture (this takes minutes on a CPU)"
 start=$(date +%s)
 docker run --rm --network iron-table_default curlimages/curl:8.22.0 -fsS --max-time 1800 \
@@ -46,3 +60,4 @@ open("/tmp/picture.png", "wb").write(data)
 print(f"PNG picture, {len(data)} bytes")
 PY
 echo "Picture made in $(( $(date +%s) - start )) seconds"
+fi
