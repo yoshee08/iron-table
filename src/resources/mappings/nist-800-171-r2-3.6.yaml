@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: CC-BY-4.0
+# Framework mapping for the evidence export (spec section 8.5). This file is data:
+# add a mapping for another framework as another file in this folder.
+id: nist-800-171-r2-3.6
+title: NIST SP 800-171 Rev. 2, family 3.6 Incident Response (CMMC Level 2)
+controls:
+  - id: "3.6.1"
+    requirement: >-
+      Establish an operational incident-handling capability for organizational systems that includes
+      preparation, detection, analysis, containment, recovery, and user response activities.
+    evidence: [aar.pdf, scenario.yaml, logs.pdf]
+    how: >-
+      The exercise used the IR plan of the organization. The AAR shows the plan sections that the team
+      used for each IR phase, the plan gaps and the corrective actions.
+  - id: "3.6.2"
+    requirement: >-
+      Track, document, and report incidents to designated officials and/or authorities both internal
+      and external to the organization.
+    evidence: [logs.pdf, communication.csv, action.csv, validation.csv, aar.pdf]
+    how: >-
+      The communication, action and validation logs record who reported what to whom, with the real
+      time and the simulated time of each entry.
+  - id: "3.6.3"
+    requirement: Test the organizational incident response capability.
+    evidence: [aar.pdf, scenario.yaml]
+    how: >-
+      The AAR records the tabletop exercise: date, scenario version, plan version, participants,
+      scores, findings and the approval of the report.

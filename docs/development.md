@@ -118,6 +118,15 @@ Open **Exercises** > **Review** (moderators only).
 - **Parking lot**: the topics from the session.
 - **Findings**: record strengths, weaknesses and plan gaps. A corrective action needs an owner and a due date. Overdue actions are marked.
 
+### After-action report and evidence
+
+1. Open **Review** > **After-action report**. Select the TLP label. Write the scenario summary and the phase review. The other parts come from the exercise records.
+2. End the session. Then select **Make version 1 final**. Your name and the date are the approval.
+3. A final version never changes. Download the **AAR (PDF)** or the **Evidence package (ZIP)**: the AAR and the logs as PDF, the logs as CSV, the scenario, the NIST SP 800-171 3.6 mapping, and `manifest.json` and `SHA256SUMS` with the SHA-256 hash of each file.
+4. To change a final report, select **Start version 2**.
+
+Framework mappings are data files in `src/resources/mappings/`. Add a file to map the evidence to another framework.
+
 ### AI assistance (optional)
 
 - The AI writes scenario drafts in small steps: the outline and the facts, then one inject text, one artifact or one rubric at a time. Moderators check each step.
