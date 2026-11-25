@@ -1,18 +1,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Local AI pictures, end to end: build the image server, download the models,
-# make one picture. Slow (CPU), so it runs by hand and weekly, not on each PR.
+# make one picture. Slow (CPU), so it runs by hand and weekly, not on pull requests.
 
 name: Images
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - compose.yaml
-      - docker/images.Dockerfile
-      - .github/workflows/images.yml
-      - .github/ci/check-images.sh
   schedule:
     - cron: "0 4 * * 1"
 
