@@ -5,6 +5,7 @@
 #   docker compose up -d                     required services
 #   docker compose --profile redis up -d     + Redis cache and queue
 #   docker compose --profile ai up -d        + local AI model (Ollama)
+#   docker compose --profile images up -d    + local AI pictures (FLUX.2 klein, about 5 GB download)
 #
 # All settings come from .env. Run ./scripts/setup.sh first.
 
@@ -111,7 +112,72 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  # Local AI pictures: stable-diffusion.cpp sd-server with FLUX.2 klein 4B on the CPU.
+  # The project publishes GPU images only, so docker/images.Dockerfile builds the CPU
+  # server from a pinned commit on the first start (about 20 minutes). A picture takes minutes.
+  images:
+    profiles: ["images"]
+    image: iron-table-images:79dc7ca
+    build:
+      context: .
+      dockerfile: docker/images.Dockerfile
+      args:
+        BUILD_JOBS: ${AI_IMAGE_BUILD_JOBS:-2}
+    command:
+      - --listen-ip
+      - 0.0.0.0
+      - --listen-port
+      - "1234"
+      - --model-dir
+      - /models
+      - --diffusion-model
+      - /models/flux-2-klein-4b-Q4_0.gguf
+      - --llm
+      - /models/Qwen3-4B-Q4_K_M.gguf
+      - --vae
+      - /models/full_encoder_small_decoder.safetensors
+      - --cfg-scale
+      - "1.0"
+    volumes:
+      - imagemodels:/models:ro
+    depends_on:
+      images-models:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    mem_limit: ${AI_IMAGE_MEMORY_LIMIT:-10g}
+    # CPU cores for pictures. 0 = all cores. Set fewer to keep the app fast on a small server.
+    cpus: ${AI_IMAGE_CPUS:-0}
+    security_opt:
+      - no-new-privileges:true
+
+  # Downloads the image model files one time (Apache-2.0, about 5.2 GB), from pinned
+  # Hugging Face revisions, and checks the SHA-256 of each file.
+  images-models:
+    profiles: ["images"]
+    image: curlimages/curl:8.22.0
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        cd /models
+        get() {
+          [ -s "$$1" ] && return 0
+          echo "Downloading $$1"
+          curl -fL --retry 3 -o "$$1.part" "$$3"
+          echo "$$2  $$1.part" | sha256sum -c -
+          mv "$$1.part" "$$1"
+        }
+        get flux-2-klein-4b-Q4_0.gguf d1023499ef3f2f82ff7c50e6778495195c1b6cc34835741778868428111f9ff4 https://huggingface.co/leejet/FLUX.2-klein-4B-GGUF/resolve/3b1f5a9dc3abb32238b053aeb3d823c30afdacbd/flux-2-klein-4b-Q4_0.gguf
+        get Qwen3-4B-Q4_K_M.gguf f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/22c9fc8a8c7700b76a1789366280a6a5a1ad1120/Qwen3-4B-Q4_K_M.gguf
+        get full_encoder_small_decoder.safetensors ea4273f02d1fafbf8e1d1c2cf6018ed8748652eb0bf34f2dd91171f16f15ab62 https://huggingface.co/black-forest-labs/FLUX.2-small-decoder/resolve/a3efc24f613ef42d9428af62fdbd6f5fd8856c4a/full_encoder_small_decoder.safetensors
+    volumes:
+      - imagemodels:/models
+    security_opt:
+      - no-new-privileges:true
+
 volumes:
   pgdata:
   storage:
   ollama:
+  imagemodels:

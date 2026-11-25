@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Enums\Role;
 use App\Models\User;
 use App\Services\Ai\AnthropicProvider;
+use App\Services\Ai\ImageProvider;
+use App\Services\Ai\LocalImageProvider;
 use App\Services\Ai\OllamaProvider;
 use App\Services\Ai\OpenAiCompatibleProvider;
+use App\Services\Ai\OpenferenceImageProvider;
 use App\Services\Ai\Provider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +31,14 @@ class AppServiceProvider extends ServiceProvider
                 default => new OllamaProvider($ai['base_url'] ?: 'http://ollama:11434', '', $ai['model'] ?: 'qwen2.5:1.5b', $ai['timeout']),
             };
         });
+
+        $this->app->bind(ImageProvider::class, function () {
+            $images = config('iron-table.images');
+
+            return $images['provider'] === 'openference'
+                ? new OpenferenceImageProvider($images['base_url'] ?: 'https://api.openference.com/v1', $images['api_key'], $images['model'], $images['timeout'])
+                : new LocalImageProvider($images['base_url'] ?: 'http://images:1234', '', 'flux-2-klein-4b', $images['timeout']);
+        });
     }
 
     /**
@@ -41,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         // Spec section 3 and SEC-01: permissions by application role.
         Gate::define('admin', fn (User $user) => $user->role === Role::Admin);
         Gate::define('moderate', fn (User $user) => in_array($user->role, [Role::Admin, Role::Moderator], true));
+        Gate::define('use-images', fn (User $user) => config('iron-table.images.provider') !== '' && Gate::forUser($user)->allows('moderate'));
         Gate::define('use-ai', fn (User $user) => config('iron-table.ai.enabled') && Gate::forUser($user)->allows('moderate'));
     }
 }

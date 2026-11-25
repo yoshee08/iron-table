@@ -5,6 +5,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ExerciseRole;
+use App\Jobs\GenerateScenarioImage;
 use App\Models\Exercise;
 use App\Models\IrPlan;
 use App\Models\Participant;
@@ -14,6 +15,7 @@ use App\Services\ScenarioChecker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -53,6 +55,12 @@ class ExerciseController
         if ($result['errors'] !== []) {
             return back()->withInput()->withErrors(['scenario_id' => 'The consistency check found '.count($result['errors']).' errors in this scenario. Correct them first.']);
         }
+        $images = ScenarioChecker::images($result['scenario']);
+        foreach ($images as $name) {
+            if (! Storage::exists(GenerateScenarioImage::folder($scenario->id).'/'.$name)) {
+                return back()->withInput()->withErrors(['scenario_id' => "The picture $name of this scenario is missing. Upload it again."]);
+            }
+        }
 
         $exercise = new Exercise;
         $exercise->forceFill([
@@ -63,6 +71,10 @@ class ExerciseController
             'scenario' => $result['scenario'],
             'created_by' => $request->user()->id,
         ])->save();
+        // The exercise keeps its own copy of the pictures, like the scenario text.
+        foreach ($images as $name) {
+            Storage::copy(GenerateScenarioImage::folder($scenario->id).'/'.$name, self::folder($exercise).'/'.$name);
+        }
 
         return redirect()->route('exercises.setup', $exercise)->with('status', 'Exercise prepared. Add the participants.');
     }
@@ -96,9 +108,18 @@ class ExerciseController
         return back()->with('status', 'Participant removed.');
     }
 
+    /**
+     * The private storage folder of the pictures of an exercise.
+     */
+    public static function folder(Exercise $exercise): string
+    {
+        return 'exercise-images/'.$exercise->id;
+    }
+
     public function destroy(Exercise $exercise): RedirectResponse
     {
         $exercise->delete();
+        Storage::deleteDirectory(self::folder($exercise));
 
         return redirect()->route('exercises.index')->with('status', 'Exercise deleted.');
     }

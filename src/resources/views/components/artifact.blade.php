@@ -3,9 +3,9 @@
     One artifact, drawn as a realistic screen (spec section 7.2). Text only: the
     content always agrees with the scenario facts. "Open large" uses the URL
     fragment (:target), so it needs no script.
-    Types: email, log, ticket, chat, sms, ransom_note, report (and any other type: document).
+    Types: email, log, ticket, chat, sms, ransom_note, image (a picture: $url), report (and any other type: document).
 --}}
-@props(['artifact', 'id'])
+@props(['artifact', 'id', 'url' => null])
 @php
     $type = strtolower((string) ($artifact['type'] ?? 'report'));
     $title = (string) ($artifact['title'] ?? ucfirst(str_replace('_', ' ', $type)));
@@ -52,6 +52,14 @@
                     </div>
                     <div class="whitespace-pre-line px-4 py-3 text-sm">{{ implode("\n", $lines) }}</div>
                 </div>
+                @break
+
+            @case('image')
+                @if ($url)
+                    <img src="{{ $url }}" alt="{{ $title }}" class="mx-auto max-h-[70vh] rounded-lg shadow-sm">
+                @else
+                    <p class="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">No picture yet.</p>
+                @endif
                 @break
 
             @case('log')

@@ -33,4 +33,17 @@ return [
         'timeout' => (int) env('AI_TIMEOUT', 180),
     ],
 
+    /*
+     * AI pictures for picture artifacts. Off when AI_IMAGE_PROVIDER is empty.
+     * local: the "images" container (FLUX.2 klein on the CPU, compose profile
+     * "images"). openference: openference.com with the customer's key.
+     */
+    'images' => [
+        'provider' => (string) env('AI_IMAGE_PROVIDER', ''),
+        'base_url' => (string) env('AI_IMAGE_BASE_URL', ''),
+        'api_key' => (string) env('AI_IMAGE_API_KEY', ''),
+        'model' => (string) env('AI_IMAGE_MODEL', ''),
+        'timeout' => (int) env('AI_IMAGE_TIMEOUT', 1800),
+    ],
+
 ];

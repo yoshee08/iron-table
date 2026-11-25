@@ -11,6 +11,7 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\PlanProfileController;
 use App\Http\Controllers\PlanSectionController;
 use App\Http\Controllers\ScenarioController;
+use App\Http\Controllers\ScenarioImageController;
 use App\Http\Middleware\RequireTwoFactorForStaff;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/scenarios/{scenario}/download', [ScenarioController::class, 'download'])->name('scenarios.download');
             Route::delete('/scenarios/{scenario}', [ScenarioController::class, 'destroy'])->name('scenarios.destroy');
 
+            // Picture artifacts: an AI prompt by default, or an upload.
+            Route::post('/scenarios/{scenario}/pictures/{inject}', [ScenarioImageController::class, 'add'])->name('scenarios.pictures.add');
+            Route::post('/scenarios/{scenario}/pictures/{inject}/{artifact}/upload', [ScenarioImageController::class, 'upload'])->whereNumber('artifact')->name('scenarios.pictures.upload');
+            Route::post('/scenarios/{scenario}/pictures/{inject}/{artifact}/generate', [ScenarioImageController::class, 'generate'])->whereNumber('artifact')->middleware('can:use-images')->name('scenarios.pictures.generate');
+            Route::post('/scenarios/{scenario}/images/{image}/choose', [ScenarioImageController::class, 'choose'])->name('scenarios.images.choose');
+            Route::get('/scenarios/{scenario}/images/{name}', [ScenarioImageController::class, 'file'])->name('scenarios.image');
+
             // Exercises: preparation and the moderator console (spec sections 4 and 7.1).
             Route::get('/exercises/create', [ExerciseController::class, 'create'])->name('exercises.create');
             Route::post('/exercises', [ExerciseController::class, 'store'])->name('exercises.store');
@@ -73,6 +81,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/exercises', [ExerciseController::class, 'index'])->name('exercises.index');
         Route::get('/exercises/{exercise}/live', [LiveController::class, 'show'])->name('exercises.live');
         Route::post('/exercises/{exercise}/responses', [LiveController::class, 'respond'])->name('exercises.responses.store');
+        Route::get('/exercises/{exercise}/images/{name}', [LiveController::class, 'image'])->name('exercises.image');
         Route::get('/plans/{plan}/download', [PlanController::class, 'download'])->name('plans.download');
 
         Route::middleware('can:admin')->prefix('admin')->name('admin.')->group(function () {

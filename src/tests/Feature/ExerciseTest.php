@@ -9,9 +9,13 @@ use App\Models\Exercise;
 use App\Models\IrPlan;
 use App\Models\Scenario;
 use App\Models\User;
+use App\Services\ScenarioChecker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Tests\FakeImages;
 use Tests\TestCase;
 
 class ExerciseTest extends TestCase
@@ -156,6 +160,31 @@ class ExerciseTest extends TestCase
         $foreign = $other->sections()->forceCreate(['position' => 0, 'title' => 'Other', 'body' => '']);
         $this->actingAs($this->player)->post("/exercises/{$exercise->id}/responses", ['inject_release_id' => $release->id, 'body' => 'X', 'sections' => [$foreign->id]])
             ->assertSessionHasErrors('sections.0');
+    }
+
+    public function test_the_exercise_keeps_its_own_copy_of_the_pictures(): void
+    {
+        Storage::fake('local');
+        $scenario = Scenario::query()->sole();
+        $this->actingAs($this->moderator)->post("/scenarios/{$scenario->id}/pictures/inj-1", [
+            'title' => 'Server room door', 'file' => UploadedFile::fake()->createWithContent('door.png', FakeImages::png()),
+        ]);
+        $artifacts = (new ScenarioChecker)->read($scenario->fresh()->source)['injects'][0]['artifacts'];
+        $name = end($artifacts)['image'];
+
+        $exercise = $this->exercise();
+        Storage::assertExists("exercise-images/{$exercise->id}/$name");
+        $this->control($exercise, 'session/start');
+        $this->control($exercise, 'release', ['inject' => 'inj-1']);
+
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/live")->assertOk()->assertSee("/exercises/{$exercise->id}/images/$name");
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/images/$name")->assertOk();
+        $this->actingAs(User::factory()->create())->get("/exercises/{$exercise->id}/images/$name")->assertForbidden();
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/images/missing.png")->assertNotFound();
+
+        // A missing picture stops a new exercise.
+        Storage::delete("scenario-images/{$scenario->id}/$name");
+        $this->actingAs($this->moderator)->post('/exercises', ['scenario_id' => $scenario->id])->assertSessionHasErrors('scenario_id');
     }
 
     public function test_only_participants_respond_and_only_while_the_session_runs(): void

@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Local AI pictures, end to end: build the image server, download the models,
+# make one picture. Slow (CPU), so it runs by hand and weekly, not on pull requests.
+
+name: Images
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+
+# A new push replaces a running check (it takes long).
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  picture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The image build, 5.2 GB of models and the Docker images need more free disk than the runner has.
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      # One step per stage: if the runner stops answering, the finished steps show how far it got.
+      # The image container gets 2 of the 4 cores and 9 of the 16 GB, so the runner keeps working.
+      - name: 1. Build the image server
+        run: ./.github/ci/check-images.sh build
+
+      - name: 2. Check the server options
+        run: ./.github/ci/check-images.sh options
+
+      - name: 3. Download the models and start the server
+        env:
+          AI_IMAGE_CPUS: "2"
+          AI_IMAGE_MEMORY_LIMIT: 9g
+        run: ./.github/ci/check-images.sh start
+
+      - name: 4. Make one picture
+        run: ./.github/ci/check-images.sh picture
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: success()
+        with:
+          name: test-picture
+          path: /tmp/picture.png
+
+      - name: Show logs after a failure
+        if: failure()
+        run: docker compose --profile images logs --no-color images images-models

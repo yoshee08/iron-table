@@ -1,7 +1,7 @@
 {{-- SPDX-License-Identifier: AGPL-3.0-or-later --}}
 {{-- Review screen (spec section 4.1): the consistency check, then the scenario with the values of the current IR plan. --}}
 @use('App\Services\ScenarioChecker')
-<x-layouts.app :title="$scenario->title">
+<x-layouts.app :title="$scenario->title" :refresh="$refresh">
     <p class="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
         <span class="font-mono">{{ $scenario->slug }}</span> · version {{ $scenario->version }}
         @if (is_scalar($filled['meta']['duration_minutes'] ?? null)) · {{ $filled['meta']['duration_minutes'] }} minutes @endif ·
@@ -86,12 +86,33 @@
                     <p class="mb-2 whitespace-pre-line">{{ $inject['body'] }}</p>
                 @endisset
 
-                @foreach ($inject['artifacts'] ?? [] as $artifact)
+                @foreach ($inject['artifacts'] ?? [] as $a => $artifact)
                     <div class="mb-2">
                         <p class="font-medium">{{ $artifact['title'] ?? 'Artifact' }}@isset($artifact['type']) ({{ $artifact['type'] }})@endisset</p>
-                        <pre class="overflow-x-auto rounded bg-zinc-100 p-2 text-xs dark:bg-zinc-800">{{ $artifact['content'] ?? '' }}</pre>
+                        @if (($artifact['type'] ?? null) === 'image')
+                            @include('scenarios._picture')
+                        @else
+                            <pre class="overflow-x-auto rounded bg-zinc-100 p-2 text-xs dark:bg-zinc-800">{{ $artifact['content'] ?? '' }}</pre>
+                        @endif
                     </div>
                 @endforeach
+
+                <details class="mb-2 text-sm">
+                    <summary class="cursor-pointer">Add a picture</summary>
+                    <form method="POST" action="{{ route('scenarios.pictures.add', [$scenario, $inject['id']]) }}" enctype="multipart/form-data" class="mt-2 max-w-lg rounded border border-zinc-200 p-3 dark:border-zinc-800">
+                        @csrf
+                        <label for="title-{{ $inject['id'] }}" class="mb-1 block text-sm font-medium">Title (for example: Server room door)</label>
+                        <input id="title-{{ $inject['id'] }}" name="title" required maxlength="200" class="mb-3 w-full rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950">
+                        <label for="prompt-{{ $inject['id'] }}" class="mb-1 block text-sm font-medium">AI prompt: describe the photo (no readable text, no logos)</label>
+                        <textarea id="prompt-{{ $inject['id'] }}" name="prompt" rows="2" class="mb-3 w-full rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950" placeholder="An office door propped open with a chair at night, seen from a security camera"></textarea>
+                        <label for="file-{{ $inject['id'] }}" class="mb-1 block text-sm font-medium">Or upload a picture (PNG, JPEG or WebP, 5 MB maximum)</label>
+                        <input id="file-{{ $inject['id'] }}" name="file" type="file" accept=".png,.jpg,.jpeg,.webp" class="mb-3 block text-sm">
+                        <p class="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
+                            @can('use-images') With a prompt and no upload, the image service makes the picture. A local picture takes about 5 to 10 minutes. @else The image service is off (AI_IMAGE_PROVIDER), so upload a picture or keep the prompt for later. @endcan
+                        </p>
+                        <x-button>Add the picture</x-button>
+                    </form>
+                </details>
 
                 @if (! empty($inject['expected_plan']))
                     <p class="font-medium">Expected plan sections</p>
@@ -129,7 +150,7 @@
 
                 @can('use-ai')
                     <div class="mb-2 flex flex-wrap gap-2">
-                        @foreach (['inject' => 'Write the text with AI', 'artifact' => 'Add an artifact with AI', 'rubric' => 'Write the rubric with AI'] as $step => $label)
+                        @foreach (['inject' => 'Write the text with AI', 'artifact' => 'Add an artifact with AI', 'picture' => 'Add a picture prompt with AI', 'rubric' => 'Write the rubric with AI'] as $step => $label)
                             <form method="POST" action="{{ route('scenarios.ai', [$scenario, $inject['id'], $step]) }}">
                                 @csrf
                                 <button type="submit" class="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">{{ $label }}</button>

@@ -32,13 +32,15 @@ jobs:
         run: shellcheck docker/entrypoint.sh scripts/*.sh .github/ci/*.sh
 
       - name: Check Dockerfile
-        run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
+        run: |
+          docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
+          docker run --rm -i hadolint/hadolint:v2.12.0 < docker/images.Dockerfile
 
       - name: Check Compose file
         run: |
           ./scripts/setup.sh
           docker compose config -q
-          docker compose --profile redis --profile ai config -q
+          docker compose --profile redis --profile ai --profile images config -q
 
   windows-setup:
     # scripts/setup.ps1 on real Windows with Windows PowerShell 5.1 (what users have).
