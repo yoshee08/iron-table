@@ -100,6 +100,8 @@ class ConsoleController
             'body' => (string) ($inject['body'] ?? ''),
             'artifacts' => $inject['artifacts'] ?? [],
             'questions' => $inject['questions'] ?? [],
+            'audience' => $inject['audience'] ?? null,
+            'timer_minutes' => $inject['timer'] ?? null,
             'sim_day' => $exercise->sim_day,
             'sim_time' => $exercise->sim_time,
             'released_by' => $request->user()->id,
@@ -117,7 +119,11 @@ class ConsoleController
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
+            'audience' => ['nullable', 'string', 'max:255'],
+            'timer_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
         ]);
+        // "CISO, Legal" becomes ["CISO", "Legal"]. Empty: everybody.
+        $data['audience'] = array_values(array_filter(array_map('trim', explode(',', (string) ($data['audience'] ?? ''))))) ?: null;
         if ($exercise->status !== 'running') {
             return back()->withErrors(['session' => 'Start or resume the session before you release an inject.']);
         }

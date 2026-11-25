@@ -138,6 +138,7 @@ class ScenarioCheckerTest extends TestCase
             "meta:\n  title: No id\n  version: 1\ninjects: []" => 'meta.id is missing',
             $this->source(['id: inj-2b' => 'id: inj-2a']) => 'Two injects have the id inj-2a.',
             $this->source(['goto: inj-2b' => 'target: inj-2b']) => 'Inject inj-1, branches item 2 has no goto.',
+            $this->source(['    end: true' => "    end: true\n    timer: 0"]) => 'Inject inj-3: timer must be a whole number of minutes, 1 to 240.',
         ];
 
         foreach ($cases as $yaml => $message) {

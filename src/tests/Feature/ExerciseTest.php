@@ -252,6 +252,61 @@ class ExerciseTest extends TestCase
             ->assertSeeText('No plan coverage: 1 of 2 responses');
     }
 
+    public function test_a_role_only_inject_is_seen_only_by_that_role(): void
+    {
+        $exercise = $this->exercise();
+        $legal = User::factory()->create();
+        $scribe = User::factory()->create();
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/participants", ['user_id' => $legal->id, 'role' => 'participant', 'plan_role' => 'Legal counsel']);
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/participants", ['user_id' => $scribe->id, 'role' => 'scribe']);
+        $this->control($exercise, 'session/start');
+        $this->control($exercise, 'write', ['title' => 'Litigation hold', 'body' => 'Outside counsel asks for a litigation hold.', 'audience' => 'Legal counsel, observer', 'timer_minutes' => 10]);
+        $release = $exercise->releases()->sole();
+        $this->assertSame([['Legal counsel', 'observer'], 10], [$release->audience, $release->timer_minutes]);
+
+        $this->actingAs($legal)->get("/exercises/{$exercise->id}/live")->assertSee('Outside counsel asks for a litigation hold.')
+            ->assertSee('Only for: Legal counsel, observer')->assertSee('Timer (10 min)');
+        $this->actingAs($scribe)->get("/exercises/{$exercise->id}/live")->assertSee('Outside counsel asks for a litigation hold.');
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/live")->assertDontSee('Outside counsel asks for a litigation hold.');
+        $this->actingAs($this->player)->post("/exercises/{$exercise->id}/responses", ['inject_release_id' => $release->id, 'body' => 'X'])->assertForbidden();
+        $this->actingAs($legal)->post("/exercises/{$exercise->id}/responses", ['inject_release_id' => $release->id, 'body' => 'Hold issued.'])->assertRedirect();
+
+        // The shared display shows only injects for everybody.
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/display")->assertOk()->assertDontSee('Outside counsel asks for a litigation hold.');
+    }
+
+    public function test_participants_confirm_their_plan_role(): void
+    {
+        $exercise = $this->exercise();
+        $this->control($exercise, 'session/start');
+
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/live")->assertSee('Confirm my role')->assertSee('You play:');
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/control")->assertSeeText('Roles confirmed: 0 of 1 (waiting: Pat Player)');
+
+        $this->actingAs($this->player)->post("/exercises/{$exercise->id}/confirm")->assertRedirect();
+        $this->assertNotNull($exercise->participants()->sole()->confirmed_at);
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/live")->assertDontSee('Confirm my role');
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/control")->assertSeeText('Roles confirmed: 1 of 1');
+        $this->actingAs(User::factory()->create())->post("/exercises/{$exercise->id}/confirm")->assertForbidden();
+    }
+
+    public function test_the_shared_display_shows_the_current_inject_only(): void
+    {
+        $exercise = $this->exercise();
+        $this->control($exercise, 'session/start');
+        $this->actingAs($this->moderator)->post("/exercises/{$exercise->id}/logs/note", ['note' => 'Secret moderator note.']);
+
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/display")->assertOk()->assertSee('It is a normal Tuesday');
+        $this->control($exercise, 'release', ['inject' => 'inj-1']);
+        $this->actingAs($this->player)->get("/exercises/{$exercise->id}/display")->assertOk()
+            ->assertSee('The help desk reports a strange mailbox rule')
+            ->assertSee('Mailbox: analyst@example.com')
+            ->assertSee('10:40')
+            ->assertDontSee('Secret moderator note.')
+            ->assertDontSee('Severity matches the plan table');
+        $this->actingAs(User::factory()->create())->get("/exercises/{$exercise->id}/display")->assertForbidden();
+    }
+
     public function test_only_participants_respond_and_only_while_the_session_runs(): void
     {
         $exercise = $this->exercise();

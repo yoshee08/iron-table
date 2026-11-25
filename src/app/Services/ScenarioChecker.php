@@ -113,6 +113,9 @@ class ScenarioChecker
                 }
             }
             $this->optionalBlocks($inject, 'branches', $where, ['when', 'goto'], ['when', 'goto']);
+            if (isset($inject['timer']) && (! is_int($inject['timer']) || $inject['timer'] < 1 || $inject['timer'] > 240)) {
+                $this->fail("$where: timer must be a whole number of minutes, 1 to 240.");
+            }
             if (isset($inject['day']) && (! is_int($inject['day']) || $inject['day'] < 1)) {
                 $this->fail("$where: day must be a whole number, 1 or more.");
             }

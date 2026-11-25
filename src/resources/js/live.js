@@ -38,6 +38,13 @@ function restore(values) {
 }
 
 function tick() {
+    // Inject timers (backlog B10).
+    document.querySelectorAll('[data-deadline]').forEach((timer) => {
+        const seconds = Math.floor((Number(timer.dataset.deadline) - Date.now()) / 1000);
+        timer.textContent = seconds <= 0
+            ? 'Time is up'
+            : `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')} left`;
+    });
     document.querySelectorAll('[data-since]').forEach((clock) => {
         const end = clock.dataset.until ? Number(clock.dataset.until) : Date.now();
         const seconds = Math.max(0, Math.floor((end - Number(clock.dataset.since)) / 1000));

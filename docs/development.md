@@ -100,6 +100,10 @@ During the session:
 
 - **Write a new inject** releases an inject that you write for an unexpected response.
 - **Plan coverage** shows the expected plan concepts of the current inject that the responses cite (used), the ones that they do not cite (missed), and the responses without plan coverage.
+- **Only for**: an inject with an audience (for example `audience: [CISO, Legal]` in the scenario, or "Only for" on a new inject) is visible only to those plan roles or exercise roles. Moderators and scribes see all injects.
+- **Timer**: an inject with `timer: 10` (minutes) shows a countdown to the participants.
+- **Shared display**: open it on a projector or a large screen for in-room groups. It shows the newest inject for everybody, its artifacts and the simulated clock, and never notes, responses or the rubric.
+- At the start, each participant confirms the plan role. The console shows who has not confirmed.
 - **Notes and logs**: write moderator notes (only moderators see them) and parking-lot topics for the debrief. Scribes write the communication, action and validation logs on their live screen. Each entry gets the real time and the simulated time.
 
 Screens update immediately through the live connection. If the connection drops, they update every 30 seconds.
