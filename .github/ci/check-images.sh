@@ -26,7 +26,7 @@ fi
 
 if [ "$only" = all ] || [ "$only" = options ]; then
 stage "2/4 The server knows the options in compose.yaml"
-help="$(docker run --rm --entrypoint /sd-server iron-table-images:79dc7ca --help 2>&1 || true)"
+help="$(docker run --rm iron-table-images:79dc7ca --help 2>&1 || true)"
 for option in --listen-ip --listen-port --model-dir --diffusion-model --llm --vae --cfg-scale; do
     grep -qF -- "$option" <<<"$help" || { echo "sd-server has no option $option"; exit 1; }
 done

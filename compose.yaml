@@ -113,16 +113,16 @@ services:
       - no-new-privileges:true
 
   # Local AI pictures: stable-diffusion.cpp sd-server with FLUX.2 klein 4B on the CPU.
-  # The project publishes GPU images only, so this builds the CPU server from a
-  # pinned commit (about 15 minutes on the first start). A picture takes minutes.
+  # The project publishes GPU images only, so docker/images.Dockerfile builds the CPU
+  # server from a pinned commit on the first start (about 20 minutes). A picture takes minutes.
   images:
     profiles: ["images"]
     image: iron-table-images:79dc7ca
     build:
-      context: https://github.com/leejet/stable-diffusion.cpp.git#79dc7ca9074d79419a46380cdb95a4524db9b74c
-      dockerfile: docker/Dockerfile
-      target: runtime
-    entrypoint: ["/sd-server"]
+      context: .
+      dockerfile: docker/images.Dockerfile
+      args:
+        BUILD_JOBS: ${AI_IMAGE_BUILD_JOBS:-2}
     command:
       - --listen-ip
       - 0.0.0.0

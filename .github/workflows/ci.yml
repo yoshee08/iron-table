@@ -32,7 +32,9 @@ jobs:
         run: shellcheck docker/entrypoint.sh scripts/*.sh .github/ci/*.sh
 
       - name: Check Dockerfile
-        run: docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
+        run: |
+          docker run --rm -i hadolint/hadolint:v2.12.0 < docker/Dockerfile
+          docker run --rm -i hadolint/hadolint:v2.12.0 < docker/images.Dockerfile
 
       - name: Check Compose file
         run: |

@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - compose.yaml
+      - docker/images.Dockerfile
       - .github/workflows/images.yml
       - .github/ci/check-images.sh
   schedule:

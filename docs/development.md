@@ -122,7 +122,7 @@ Each picture artifact has an AI prompt, for example "an office door propped open
 To use the local image model (nothing leaves the server):
 
 1. In `.env`, set `AI_IMAGE_PROVIDER=local`.
-2. Start: `docker compose --profile images up -d`. The first start builds the image server (about 15 minutes) and downloads the model files (about 5.2 GB). The download checks the SHA-256 of each file.
+2. Start: `docker compose --profile images up -d`. The first start builds the image server for this CPU (about 20 minutes; `AI_IMAGE_BUILD_JOBS` compile jobs) and downloads the model files (about 5.2 GB). The download checks the SHA-256 of each file.
 3. The model needs about 8 GB of memory. A picture takes about 5 to 10 minutes on a CPU. The queue worker makes it, so you can continue to work.
 
 To use openference.com, set `AI_IMAGE_PROVIDER=openference`, `AI_IMAGE_API_KEY` and `AI_IMAGE_MODEL` (an image model from openference.com/models). The picture prompt goes to openference.com. Its website does not say who runs the service or how long it keeps data.
