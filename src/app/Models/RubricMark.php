@@ -4,11 +4,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * The mark of one rubric item (spec section 8.3): met, partly or not_met.
  */
+#[Fillable(['exercise_id', 'inject_key', 'item', 'result', 'points', 'reason', 'marked_by'])]
 class RubricMark extends Model
 {
     public const RESULTS = ['met' => 'Met', 'partly' => 'Partly met', 'not_met' => 'Not met'];
