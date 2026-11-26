@@ -35,4 +35,12 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
+
+    /**
+     * A guest has a temporary account for one exercise only (spec SEC-05).
+     */
+    public function isGuest(): bool
+    {
+        return $this->guest_exercise_id !== null;
+    }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AiScenarioController;
 use App\Http\Controllers\ConsoleController;
 use App\Http\Controllers\ExerciseController;
+use App\Http\Controllers\JoinController;
 use App\Http\Controllers\LiveController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\PlanController;
@@ -22,6 +23,12 @@ use Illuminate\Support\Facades\Route;
 // Login, logout, password reset and two-factor routes come from Laravel Fortify.
 
 Route::redirect('/', '/dashboard');
+
+// Guests join an exercise with its session code (spec SEC-05).
+Route::middleware('guest')->group(function () {
+    Route::get('/join', [JoinController::class, 'show'])->name('join');
+    Route::post('/join', [JoinController::class, 'store'])->middleware('throttle:10,1')->name('join.store');
+});
 
 Route::middleware('auth')->group(function () {
     // Always open, so that a user can turn on two-factor authentication.
@@ -72,7 +79,9 @@ Route::middleware('auth')->group(function () {
             Route::post('/exercises', [ExerciseController::class, 'store'])->name('exercises.store');
             Route::get('/exercises/{exercise}/setup', [ExerciseController::class, 'setup'])->name('exercises.setup');
             Route::post('/exercises/{exercise}/participants', [ExerciseController::class, 'addParticipant'])->name('exercises.participants.store');
+            Route::put('/exercises/{exercise}/participants/{participant}', [ExerciseController::class, 'updateParticipant'])->scopeBindings()->name('exercises.participants.update');
             Route::delete('/exercises/{exercise}/participants/{participant}', [ExerciseController::class, 'removeParticipant'])->scopeBindings()->name('exercises.participants.destroy');
+            Route::post('/exercises/{exercise}/guests/{action}', [ExerciseController::class, 'guests'])->name('exercises.guests');
             Route::delete('/exercises/{exercise}', [ExerciseController::class, 'destroy'])->name('exercises.destroy');
             Route::get('/exercises/{exercise}/control', [ConsoleController::class, 'show'])->name('exercises.control');
             Route::post('/exercises/{exercise}/session/{action}', [ConsoleController::class, 'session'])->name('exercises.session');

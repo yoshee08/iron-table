@@ -21,9 +21,16 @@
         <tbody>
             @forelse ($participants as $participant)
                 <tr class="border-b border-zinc-200 dark:border-zinc-800">
-                    <td class="py-2 pr-4">{{ $participant->user->name }}</td>
+                    <td class="py-2 pr-4">{{ $participant->user->name }}@if ($participant->user->isGuest()) <span class="text-zinc-600 dark:text-zinc-400">(guest)</span>@endif</td>
                     <td class="py-2 pr-4">{{ $participant->role->label() }}</td>
-                    <td class="py-2 pr-4">{{ $participant->plan_role ?? '—' }}</td>
+                    <td class="py-2 pr-4">
+                        <form method="POST" action="{{ route('exercises.participants.update', [$exercise, $participant]) }}" class="flex gap-2">
+                            @csrf
+                            @method('PUT')
+                            <input type="text" name="plan_role" value="{{ $participant->plan_role }}" maxlength="100" aria-label="Plan role of {{ $participant->user->name }}" class="w-40 rounded border border-zinc-300 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
+                            <button type="submit" class="text-sm underline underline-offset-4">Save</button>
+                        </form>
+                    </td>
                     <td class="py-2 pr-4">
                         <form method="POST" action="{{ route('exercises.participants.destroy', [$exercise, $participant]) }}">
                             @csrf
@@ -37,6 +44,28 @@
             @endforelse
         </tbody>
     </table>
+
+    <h2 class="mb-2 text-lg font-semibold">Guest access</h2>
+    <div class="mb-8 max-w-xl text-sm">
+        @error('guests') <p role="alert" class="mb-2 text-red-700 dark:text-red-400">{{ $message }}</p> @enderror
+        @if ($exercise->guest_code)
+            <p class="mb-2">Guests join without an account at <a href="{{ route('join', ['code' => $exercise->guest_code]) }}" class="underline underline-offset-4">{{ route('join') }}</a> with this session code:</p>
+            <p class="mb-2 font-mono text-2xl tracking-widest">{{ $exercise->guest_code }}</p>
+            <p class="mb-2">A guest is a participant of this exercise only. The code stops working when the session ends or when you turn guest access off.</p>
+            <form method="POST" action="{{ route('exercises.guests', [$exercise, 'off']) }}">
+                @csrf
+                <button type="submit" class="underline underline-offset-4">Turn guest access off</button>
+            </form>
+        @elseif ($exercise->status !== 'ended')
+            <p class="mb-2">Guest access is off. Turn it on to get a session code for people without an account.</p>
+            <form method="POST" action="{{ route('exercises.guests', [$exercise, 'on']) }}">
+                @csrf
+                <x-button>Turn guest access on</x-button>
+            </form>
+        @else
+            <p>The session has ended. Guests cannot join.</p>
+        @endif
+    </div>
 
     <h2 class="mb-2 text-lg font-semibold">Add a participant</h2>
     @if ($users->isEmpty())

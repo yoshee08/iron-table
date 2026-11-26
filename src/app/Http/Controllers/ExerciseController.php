@@ -84,7 +84,7 @@ class ExerciseController
         return view('exercises.setup', [
             'exercise' => $exercise,
             'participants' => $exercise->participants()->with('user')->get(),
-            'users' => User::query()->whereNotIn('id', $exercise->participants()->select('user_id'))->orderBy('name')->get(),
+            'users' => User::query()->whereNull('guest_exercise_id')->whereNotIn('id', $exercise->participants()->select('user_id'))->orderBy('name')->get(),
         ]);
     }
 
@@ -99,6 +99,32 @@ class ExerciseController
         $exercise->participants()->forceCreate($data);
 
         return back()->with('status', 'Participant added.');
+    }
+
+    /**
+     * Change the plan role of a participant, for example of a guest after the guest joined.
+     */
+    public function updateParticipant(Request $request, Exercise $exercise, Participant $participant): RedirectResponse
+    {
+        $data = $request->validate(['plan_role' => ['nullable', 'string', 'max:100']]);
+        $participant->forceFill(['plan_role' => $data['plan_role'] ?? null])->save();
+        ConsoleController::changed($exercise);
+
+        return back()->with('status', 'Plan role saved.');
+    }
+
+    /**
+     * Guest access with a session code (spec SEC-05): on makes a new code, off removes it.
+     */
+    public function guests(Exercise $exercise, string $action): RedirectResponse
+    {
+        abort_unless(in_array($action, ['on', 'off'], true), 404);
+        if ($action === 'on' && $exercise->status === 'ended') {
+            return back()->withErrors(['guests' => 'The session has ended. Guests cannot join.']);
+        }
+        $exercise->forceFill(['guest_code' => $action === 'on' ? Exercise::newGuestCode() : null])->save();
+
+        return back()->with('status', $action === 'on' ? 'Guest access is on. Give the code to the guests.' : 'Guest access is off.');
     }
 
     public function removeParticipant(Exercise $exercise, Participant $participant): RedirectResponse
@@ -118,8 +144,7 @@ class ExerciseController
 
     public function destroy(Exercise $exercise): RedirectResponse
     {
-        $exercise->delete();
-        Storage::deleteDirectory(self::folder($exercise));
+        $exercise->purge();
 
         return redirect()->route('exercises.index')->with('status', 'Exercise deleted.');
     }

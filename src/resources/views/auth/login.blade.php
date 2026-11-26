@@ -13,4 +13,7 @@
     <p class="mt-4 text-center text-sm">
         <a href="{{ route('password.request') }}" class="underline underline-offset-4">Forgot your password?</a>
     </p>
+    <p class="mt-2 text-center text-sm">
+        <a href="{{ route('join') }}" class="underline underline-offset-4">Join an exercise with a session code</a>
+    </p>
 </x-layouts.guest>
