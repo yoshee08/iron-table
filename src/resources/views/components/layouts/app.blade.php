@@ -18,6 +18,7 @@
         <header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
             <nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3" aria-label="Main">
                 <a href="{{ route('dashboard') }}" class="font-semibold">{{ config('app.name') }}</a>
+                @unless (auth()->user()->isGuest())
                 <a href="{{ route('dashboard') }}" class="text-sm underline-offset-4 hover:underline">Dashboard</a>
                 <a href="{{ route('exercises.index') }}" class="text-sm underline-offset-4 hover:underline">Exercises</a>
                 <a href="{{ route('plans.index') }}" class="text-sm underline-offset-4 hover:underline">IR plan</a>
@@ -29,7 +30,8 @@
                     <a href="{{ route('admin.audit.index') }}" class="text-sm underline-offset-4 hover:underline">Audit log</a>
                 @endcan
                 <a href="{{ route('account') }}" class="text-sm underline-offset-4 hover:underline">Account</a>
-                <span class="ml-auto text-sm text-zinc-600 dark:text-zinc-400">{{ auth()->user()->name }} ({{ auth()->user()->role->label() }})</span>
+                @endunless
+                <span class="ml-auto text-sm text-zinc-600 dark:text-zinc-400">{{ auth()->user()->name }} ({{ auth()->user()->isGuest() ? 'Guest' : auth()->user()->role->label() }})</span>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="text-sm underline-offset-4 hover:underline">Log out</button>

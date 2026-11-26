@@ -70,6 +70,20 @@ services:
       app:
         condition: service_healthy
 
+  # Daily tasks: the deletion of old exercises (RETENTION_DAYS, spec SEC-07).
+  scheduler:
+    <<: *app-image
+    command: ["scheduler"]
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      app:
+        condition: service_healthy
+
   db:
     image: pgvector/pgvector:0.8.7-pg18
     restart: unless-stopped

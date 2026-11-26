@@ -44,7 +44,7 @@ done
 (cd "$work" && sha -c SHA256SUMS >/dev/null) || fail "Checksum error. The backup is damaged. Nothing changed."
 
 say "2/5 Stop the application"
-docker compose stop app reverb worker
+docker compose stop app reverb worker scheduler
 docker compose up -d --wait db
 
 say "3/5 Restore the database"

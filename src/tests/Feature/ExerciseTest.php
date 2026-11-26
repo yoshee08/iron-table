@@ -442,4 +442,76 @@ class ExerciseTest extends TestCase
         $this->actingAs($this->player)->post("/exercises/{$exercise->id}/responses", $data)->assertForbidden();
         $this->assertSame(0, $exercise->responses()->count());
     }
+
+    /**
+     * Guest access on, then join as a guest (logged out first). Returns the guest.
+     */
+    private function joinAsGuest(Exercise $exercise, string $name = 'Gale Guest'): User
+    {
+        $this->control($exercise, 'guests/on')->assertSessionHasNoErrors();
+        $code = (string) $exercise->refresh()->guest_code;
+        auth()->guard('web')->forgetUser();
+
+        // Lower case and spaces are accepted.
+        $this->post('/join', ['code' => strtolower(substr($code, 0, 5).' '.substr($code, 5)), 'name' => $name])
+            ->assertRedirect("/exercises/{$exercise->id}/live");
+
+        return User::query()->where('name', $name)->sole();
+    }
+
+    public function test_a_guest_joins_with_the_session_code_and_sees_only_the_live_screen(): void
+    {
+        $exercise = $this->exercise();
+        $other = $this->exercise();
+        $guest = $this->joinAsGuest($exercise);
+
+        $this->assertMatchesRegularExpression('/^[A-HJKMNP-Z2-9]{10}$/', (string) $exercise->guest_code);
+        $this->assertTrue($guest->isGuest());
+        $this->assertSame('participant', $exercise->participants()->where('user_id', $guest->id)->sole()->role->value);
+        $this->assertAuthenticatedAs($guest);
+
+        $this->actingAs($guest)->get("/exercises/{$exercise->id}/live")->assertOk()->assertSee($exercise->title);
+        $this->actingAs($guest)->get('/plans')->assertRedirect("/exercises/{$exercise->id}/live");
+        $this->actingAs($guest)->get('/account')->assertRedirect("/exercises/{$exercise->id}/live");
+        $this->actingAs($guest)->get("/exercises/{$other->id}/live")->assertRedirect("/exercises/{$exercise->id}/live");
+        $this->actingAs($guest)->post("/exercises/{$other->id}/confirm")->assertForbidden();
+        $this->actingAs($guest)->put('/user/password', [])->assertForbidden();
+    }
+
+    public function test_a_wrong_code_is_refused_and_the_end_of_the_session_ends_guest_access(): void
+    {
+        $exercise = $this->exercise();
+        auth()->guard('web')->forgetUser();
+        $this->post('/join', ['code' => 'WRONGCODE2', 'name' => 'X'])->assertSessionHasErrors('code');
+        $guest = $this->joinAsGuest($exercise);
+        $code = $exercise->guest_code;
+
+        $this->control($exercise, 'session/start');
+        $this->control($exercise, 'session/end');
+        $this->assertNull($exercise->refresh()->guest_code);
+
+        $this->actingAs($guest)->get("/exercises/{$exercise->id}/live")->assertRedirect('/join');
+        $this->assertGuest();
+        $this->post('/join', ['code' => $code, 'name' => 'Late Guest'])->assertSessionHasErrors('code');
+        $this->control($exercise, 'guests/on')->assertSessionHasErrors('guests');
+    }
+
+    public function test_guests_get_a_plan_role_and_are_not_in_the_user_lists(): void
+    {
+        $exercise = $this->exercise();
+        $guest = $this->joinAsGuest($exercise);
+        $participant = $exercise->participants()->where('user_id', $guest->id)->sole();
+
+        $this->actingAs($this->moderator)->put("/exercises/{$exercise->id}/participants/{$participant->id}", ['plan_role' => 'Legal'])->assertSessionHasNoErrors();
+        $this->assertSame('Legal', $participant->refresh()->plan_role);
+        $this->actingAs($this->moderator)->get("/exercises/{$exercise->id}/setup")->assertOk()->assertSee('(guest)');
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create())->get('/admin/users')->assertOk()->assertDontSee('Gale Guest');
+
+        $this->control($exercise, 'guests/off');
+        $this->assertNull($exercise->refresh()->guest_code);
+
+        // Deleting the exercise deletes its guest accounts.
+        $this->actingAs($this->moderator)->delete("/exercises/{$exercise->id}");
+        $this->assertModelMissing($guest);
+    }
 }

@@ -63,7 +63,8 @@ class ConsoleController
             $exercise->forceFill(['started_at' => now(), 'sim_day' => $first['day'] ?? 1, 'sim_time' => $first['at']]);
         }
         if ($action === 'end') {
-            $exercise->ended_at = now();
+            // Spec SEC-05: the session code expires when the session ends.
+            $exercise->forceFill(['ended_at' => now(), 'guest_code' => null]);
         }
         $exercise->save();
         self::changed($exercise);

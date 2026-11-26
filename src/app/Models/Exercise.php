@@ -5,9 +5,11 @@
 namespace App\Models;
 
 use App\Enums\ExerciseRole;
+use App\Http\Controllers\ExerciseController;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * One exercise and its live session (spec sections 4 and 10).
@@ -17,6 +19,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Exercise extends Model
 {
     public const LIVE = ['running', 'paused', 'stopped'];
+
+    /** Session code characters: no 0/O, 1/I/L, so that people can read the code aloud. */
+    private const CODE_CHARACTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+    /**
+     * A new random session code for guests (spec SEC-05: at least 8 random characters).
+     */
+    public static function newGuestCode(): string
+    {
+        do {
+            $code = '';
+            for ($i = 0; $i < 10; $i++) {
+                $code .= self::CODE_CHARACTERS[random_int(0, strlen(self::CODE_CHARACTERS) - 1)];
+            }
+        } while (self::query()->where('guest_code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Deletes the exercise, its records (by cascade), its guest accounts, its pictures
+     * and its report files. The audit log keeps its events (spec SEC-06, SEC-07).
+     */
+    public function purge(): void
+    {
+        $this->delete();
+        Storage::deleteDirectory(ExerciseController::folder($this));
+        Storage::deleteDirectory('reports/'.$this->id);
+    }
 
     protected function casts(): array
     {

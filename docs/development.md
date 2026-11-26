@@ -15,7 +15,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 | --- | --- |
 | `src/` | The Laravel application (PHP code, views, tests, Composer and npm files) |
 | `compose.yaml` | The Docker Compose deployment: services, volumes and profiles |
-| `docker/Dockerfile` | The one image for the three roles: `app`, `reverb` and `worker` |
+| `docker/Dockerfile` | The one image for the four roles: `app`, `reverb`, `worker` and `scheduler` |
 | `docker/entrypoint.sh` | Starts the role that the container receives |
 | `docker/Caddyfile` | Web server: the PHP app and the live-update path `/app/*` on one port |
 | `docker/php/iron-table.ini` | PHP settings for production |
@@ -60,6 +60,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 - `./scripts/backup.sh` writes one file to `backups/` with the database and the uploaded files.
 - `./scripts/restore.sh backups/<file>.tar` replaces all data with the backup. It asks first.
 - A backup does not contain `.env`. Keep a safe copy of `APP_KEY`. The restore needs the same `APP_KEY`.
+- **Retention** (spec SEC-07): set `RETENTION_DAYS` in `.env` to the period of your records policy, then run `docker compose up -d`. Each day at 03:00 (UTC) the `scheduler` service deletes each exercise that ended more than that many days ago (or that did not change for that many days, if its session never ended). It deletes the records, guest accounts, pictures and report files of the exercise. The audit log keeps its events. `0` (the default) keeps all exercises. Download the evidence package of an exercise before its period ends. To run the deletion now: `docker compose exec app php artisan iron-table:retention`.
 
 ## 7. First administrator and users
 
@@ -91,6 +92,7 @@ This guide uses ASD-STE100 Simplified Technical English. It tells you how to bui
 
 1. Open **Exercises** > **Prepare an exercise**. Select a scenario that passes the consistency check. The exercise keeps a copy of the scenario and of the current IR plan version.
 2. Add the participants. Give each one an exercise role (participant, scribe or observer) and a plan role, for example CISO.
+   - **Guests** (people without an account): select **Turn guest access on**. Give the guests the session code and the join link (`/join`). A guest types the code and a name, and becomes a participant of this exercise only. A guest sees only the live screen. Set the plan role of each guest in the participant list. The code stops working, and guests are logged out, when the session ends. Select **Turn guest access off** to stop new guests at any time.
 3. Open **Control**. Select **Start the session**.
 4. Release the injects. The timeline marks the suggested next inject. You can release any inject, for example a branch.
 5. Participants open **Live screen**. They see the injects and the artifacts, and send responses that cite plan sections.

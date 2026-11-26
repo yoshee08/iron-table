@@ -6,6 +6,7 @@
 #   app     web application (FrankenPHP), runs database migrations first
 #   reverb  live updates (WebSocket server)
 #   worker  queue worker (imports, exports, AI requests)
+#   scheduler  daily tasks, for example the retention (spec SEC-07)
 # Any other value is run as a command, for example: iron-table-entrypoint php artisan about
 
 set -eu
@@ -46,6 +47,10 @@ case "$role" in
     worker)
         cache_config
         exec php artisan queue:work --tries=3 --max-time=3600 --no-interaction
+        ;;
+    scheduler)
+        cache_config
+        exec php artisan schedule:work --no-interaction
         ;;
     *)
         exec "$@"

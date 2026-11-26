@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# IRon Table - one image, three roles (app, reverb, worker).
+# IRon Table - one image, four roles (app, reverb, worker, scheduler).
 # The role is the first argument to the entrypoint (see docker/entrypoint.sh).
 #
 # Targets:

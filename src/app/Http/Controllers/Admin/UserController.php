@@ -23,7 +23,8 @@ class UserController
     public function index(): View
     {
         return view('admin.users', [
-            'users' => User::query()->orderBy('name')->get(),
+            // Guests (spec SEC-05) are in the participant list of their exercise, not here.
+            'users' => User::query()->whereNull('guest_exercise_id')->orderBy('name')->get(),
             'roles' => Role::cases(),
         ]);
     }

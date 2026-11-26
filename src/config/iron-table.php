@@ -20,6 +20,13 @@ return [
     ],
 
     /*
+     * Retention (spec SEC-07): the application deletes an exercise and all its
+     * records this many days after the session ended (or after the last change,
+     * if the session never ended). 0 = keep all exercises. The audit log is kept.
+     */
+    'retention_days' => (int) env('RETENTION_DAYS', 0),
+
+    /*
      * AI assistance (spec section 9). Off by default. The provider is
      * ollama (local), anthropic (Claude) or openai_compatible (for example
      * DeepSeek). An empty model uses the default model of the provider.
