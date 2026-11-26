@@ -481,6 +481,7 @@ class ExerciseTest extends TestCase
     public function test_a_wrong_code_is_refused_and_the_end_of_the_session_ends_guest_access(): void
     {
         $exercise = $this->exercise();
+        auth()->guard('web')->forgetUser();
         $this->post('/join', ['code' => 'WRONGCODE2', 'name' => 'X'])->assertSessionHasErrors('code');
         $guest = $this->joinAsGuest($exercise);
         $code = $exercise->guest_code;
