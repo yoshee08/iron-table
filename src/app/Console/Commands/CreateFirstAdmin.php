@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Services\AuditLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 
@@ -54,12 +55,13 @@ class CreateFirstAdmin extends Command
             return self::FAILURE;
         }
 
-        User::query()->forceCreate([
+        $admin = User::query()->forceCreate([
             'name' => $settings['name'],
             'email' => $settings['email'],
             'password' => $settings['password'],
             'role' => Role::Admin,
         ]);
+        app(AuditLog::class)->record('first-admin', ['user' => $admin->getKey()], null, 'console');
 
         $this->info('First administrator created: '.$settings['email']);
 

@@ -168,6 +168,13 @@ A scenario with pictures downloads as a ZIP file: `scenario.yaml` and the folder
 - The containers send no telemetry.
 - The web server sends security headers: a Content Security Policy (scripts, styles and data from this server only, no frames), `X-Content-Type-Options`, `X-Frame-Options` and `Referrer-Policy`. CI checks them.
 
+### Audit log
+
+- The audit log records logins, failed logins, lockouts, password resets, each change (each form that a logged-in user sends) and each download of a plan, a scenario, an AAR PDF or an evidence package. An event has the time, the user, the route name, the route parameters (record IDs), the HTTP status and the IP address. It never has the form input.
+- Administrators see the log at **Audit log** (`/admin/audit`). **Check the chain** checks all events.
+- Each event has the SHA-256 hash of the event before it. A PostgreSQL trigger stops updates, deletes and `TRUNCATE`. To check the chain from the command line, run `docker compose exec app php artisan iron-table:audit-verify`. It fails if an event was changed or deleted.
+- Limitation: the database role of the application owns the table, so it can turn off the trigger. The hash chain then shows the change. A deletion of the newest events does not break the chain. Keep backups, so that you can compare.
+
 ## 9. Live updates
 
 - Browsers use one port only: `APP_PORT` (default 8080).

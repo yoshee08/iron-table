@@ -2,6 +2,7 @@
 
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AiScenarioController;
 use App\Http\Controllers\ConsoleController;
@@ -113,6 +114,7 @@ Route::middleware('auth')->group(function () {
             Route::put('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.role');
             Route::post('/users/{user}/setup-link', [UserController::class, 'setupLink'])->name('users.setup-link');
             Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+            Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
         });
     });
 });
