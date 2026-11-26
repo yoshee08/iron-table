@@ -11,6 +11,12 @@ use App\Services\Ai\OllamaProvider;
 use App\Services\Ai\OpenAiCompatibleProvider;
 use App\Services\Ai\OpenferenceImageProvider;
 use App\Services\Ai\Provider;
+use App\Services\AuditLog;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -54,5 +60,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('moderate', fn (User $user) => in_array($user->role, [Role::Admin, Role::Moderator], true));
         Gate::define('use-images', fn (User $user) => config('iron-table.images.provider') !== '' && Gate::forUser($user)->allows('moderate'));
         Gate::define('use-ai', fn (User $user) => config('iron-table.ai.enabled') && Gate::forUser($user)->allows('moderate'));
+
+        // Spec SEC-06: logins, failed logins, lockouts and password resets go into the audit log.
+        // Only the email of a failed login is recorded, never the password.
+        Event::listen(Login::class, fn (Login $event) => app(AuditLog::class)->record('login', [], $event->user instanceof User ? $event->user : null));
+        Event::listen(Failed::class, fn (Failed $event) => app(AuditLog::class)->record('login.failed', [], null, (string) ($event->credentials['email'] ?? 'unknown')));
+        Event::listen(Lockout::class, fn (Lockout $event) => app(AuditLog::class)->record('login.lockout', [], null, (string) $event->request->input('email', 'unknown')));
+        Event::listen(PasswordReset::class, fn (PasswordReset $event) => app(AuditLog::class)->record('password.reset', [], $event->user instanceof User ? $event->user : null));
     }
 }

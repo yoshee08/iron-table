@@ -26,6 +26,7 @@
                 @endcan
                 @can('admin')
                     <a href="{{ route('admin.users.index') }}" class="text-sm underline-offset-4 hover:underline">Users</a>
+                    <a href="{{ route('admin.audit.index') }}" class="text-sm underline-offset-4 hover:underline">Audit log</a>
                 @endcan
                 <a href="{{ route('account') }}" class="text-sm underline-offset-4 hover:underline">Account</a>
                 <span class="ml-auto text-sm text-zinc-600 dark:text-zinc-400">{{ auth()->user()->name }} ({{ auth()->user()->role->label() }})</span>
